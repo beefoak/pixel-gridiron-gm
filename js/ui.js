@@ -310,18 +310,24 @@ function vPlayoffs() {
 
 // ---------- Leaders ----------
 const LEADERS = [
-  ['PASSING YARDS', s => s.pYds], ['PASSING TD', s => s.pTd], ['PASSER RATING', s => s.pAtt >= 150 ? +passerRating(s).toFixed(1) : null],
-  ['RUSHING YARDS', s => s.rYds], ['RUSHING TD', s => s.rTd], ['YARDS PER CARRY', s => s.rAtt >= 100 ? +(s.rYds / s.rAtt).toFixed(2) : null],
+  // Rate stats use league-style qualifiers scaled to games played (g): 14 attempts / 6.25 carries / 3 punts per team game.
+  ['PASSING YARDS', s => s.pYds], ['PASSING TD', s => s.pTd], ['PASSER RATING', (s, g) => s.pAtt >= Math.max(1, 14 * g) ? +passerRating(s).toFixed(1) : null],
+  ['RUSHING YARDS', s => s.rYds], ['RUSHING TD', s => s.rTd], ['YARDS PER CARRY', (s, g) => s.rAtt >= Math.max(1, 6.25 * g) ? +(s.rYds / s.rAtt).toFixed(2) : null],
   ['RECEPTIONS', s => s.rec], ['RECEIVING YARDS', s => s.reYds], ['RECEIVING TD', s => s.reTd],
   ['TACKLES', s => s.tkl], ['SACKS', s => s.sack], ['INTERCEPTIONS', s => s.dInt],
-  ['FORCED FUMBLES', s => s.ff], ['FIELD GOALS', s => s.fgm], ['PUNT AVG', s => s.pnt >= 20 ? +(s.pntYds / s.pnt).toFixed(1) : null],
+  ['FORCED FUMBLES', s => s.ff], ['FIELD GOALS', s => s.fgm], ['PUNT AVG', (s, g) => s.pnt >= Math.max(1, 3 * g) ? +(s.pntYds / s.pnt).toFixed(1) : null],
 ];
+// Games the player's team has played (regular season), or the player's own games for playoffs / free agents.
+function teamGamesFor(p, s, po) {
+  if (po || p.tid < 0) return s.gp || 0;
+  const r = TM(p.tid).rec; return r.w + r.l + r.t;
+}
 function vLeaders() {
   const po = UI.leadMode === 'po';
   const ps = Object.values(G.players).filter(p => p.tid >= 0 || p.tid === -1);
   let h = `<div class="filters"><button class="chip ${!po ? 'on' : ''}" data-act="leadMode" data-v="reg">REGULAR SEASON</button><button class="chip ${po ? 'on' : ''}" data-act="leadMode" data-v="po">PLAYOFFS</button></div><div class="leaders">`;
   for (const [label, fn] of LEADERS) {
-    const rows = ps.map(p => [p, fn(po ? p.pstats : p.stats)]).filter(x => x[1] !== null && x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const rows = ps.map(p => { const s = po ? p.pstats : p.stats; return [p, fn(s, teamGamesFor(p, s, po))]; }).filter(x => x[1] !== null && x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
     h += panel(label, rows.length ? `<table class="tbl">${rows.map(([p, v], i) => `<tr class="${p.tid === G.userTeam ? 'me-row' : ''}"><td class="dim">${i + 1}</td><td>${p.tid >= 0 ? helm(p.tid, 16) : ''} ${pLink(p, true)}</td><td class="dim">${p.pos}</td><td class="r"><b>${v}</b></td></tr>`).join('')}</table>` : '<p class="dim">No stats yet.</p>', 'lead');
   }
   return h + '</div>';
