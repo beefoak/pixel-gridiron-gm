@@ -40,7 +40,7 @@ function vTraining() {
     const rate = p ? trainLabel(trainRate(p)) : '';
     body += `<div class="train-slot"><div class="px gold">${i + 1}</div>
       <div><select data-change="trainP" data-i="${i}">${opts}</select>${c.benched ? `<div class="small bad">${esc(shortName(c.benched))} is hurt - auto fill-in this week</div>` : ''}</div>
-      <div>${p ? `${c.manual ? '' : '<span class="dim small">AUTO:</span> '}${ovrB(p.ovr)} ${pLink(p, true)} <span class="dim small">${p.pos} · age ${p.age} · POT ${potGrade(p.pot)}</span><div>${attrSel}</div>` : '<span class="dim">No healthy player available.</span>'}</div>
+      <div>${p ? `${c.manual ? '' : '<span class="dim small">AUTO:</span> '}${ovrB(p.ovr)} ${pLink(p, true)} <span class="dim small">${p.pos} · age ${p.age} · POT ${potGrade(p.pot, p.gen)}</span><div>${attrSel}</div>` : '<span class="dim">No healthy player available.</span>'}</div>
       <div class="small">${p ? `GROWTH <span class="need n-${rate === 'HIGH' ? 'low' : rate === 'MED' ? 'med' : 'high'}">${rate}</span><div class="dim">Season gains: +${p.tGain || 0} pts</div>` : ''}</div></div>`;
   });
   h += panel(`THIS WEEK'S FOCUS <button class="btn tiny alt" data-act="trainAuto">ALL AUTO</button>`, body);
@@ -105,7 +105,7 @@ function draftReviewModal(year) {
   const myRank = D.teams.findIndex(t => t.tid === G.userTeam) + 1;
   const my = D.teams.find(t => t.tid === G.userTeam);
   const pl = (k) => G.players[k.pid] ? pLink(G.players[k.pid]) : esc(k.name || '-');
-  const nowR = (k) => { const p = G.players[k.pid]; return p ? `${ovrB(p.ovr)} ${potB(p.pot)}` : ''; };
+  const nowR = (k) => { const p = G.players[k.pid]; return p ? `${ovrB(p.ovr)} ${potB(p.pot, p.gen)}` : ''; };
   let h = `<h3 class="px">${year} DRAFT REVIEW</h3>
   <div class="rv-head">${my ? gradeB(letterFor(my.score)).replace('grade ', 'grade big ') : ''}<div>
     <div>${my ? `Your class ranks <b>${ordinal(myRank)}</b> of ${D.teams.length}.` : 'You made no picks.'}</div>
@@ -129,6 +129,7 @@ function onDevClick(act, el) {
     case 'editSave': { const p = G.players[+id]; if (!p) return true; editPlayer(G, p, readEditForm()); persist(); render(); playerModal(p.id); toast(`Saved ${fullName(p)} (${p.ovr} OVR).`); return true; }
     case 'faReview': faReviewModal(+v); return true;
     case 'draftReview': draftReviewModal(+v); return true;
+    case 'tsSort': UI.tsSort = el.dataset.k; render(); return true;
   }
   return false;
 }
@@ -142,4 +143,69 @@ function onDevChange(k, el) {
   }
   if (k === 'trainA') { const i = +el.dataset.i; if (T.slots[i]) T.slots[i].attr = el.value; persist(); render(); return true; }
   return false;
+}
+
+// ---------- Team view: stats, roster, history ----------
+// Live stats once games are played; otherwise last season's saved snapshot.
+function teamStatSource() {
+  const live = G.schedule.some(g => g.played);
+  if (live) { const r = teamStatRanks(G); return { label: `${G.year} SEASON`, live: true, all: r.all, ranks: r.ranks }; }
+  const all = G.teams.map(t => { const h = t.history[t.history.length - 1]; return h && h.ts ? h.ts : null; });
+  if (!all.some(Boolean)) return null;
+  const ranks = G.teams.map(() => ({}));
+  for (const [k, , dir] of TEAM_STAT_DEFS) {
+    const order = all.map((v, i) => i).filter(i => all[i]).sort((a, b) => (all[b][k] - all[a][k]) * dir);
+    order.forEach((ti, r) => ranks[ti][k] = r + 1);
+  }
+  const yr = G.teams[0].history.length ? G.teams[0].history[G.teams[0].history.length - 1].year : G.year - 1;
+  return { label: `${yr} SEASON (FINAL)`, live: false, all, ranks, year: yr };
+}
+function rankCell(r) { if (!r) return ''; return `<span class="${r <= 8 ? 'rk-good' : r >= 25 ? 'rk-bad' : 'dim'} small">${ordinal(r)}</span>`; }
+const TS_OFF = ['ppg', 'ypg', 'pypg', 'rypg', 'fd', 'tdp', 'tdr', 'cmp', 'to', 'sk', 'fgp'];
+const TS_DEF = ['papg', 'oypg', 'opypg', 'orypg', 'tk', 'diff', 'sack'];
+function teamLeadersHtml(tid, src) {
+  let rows = [];
+  if (src.live) {
+    const pl = teamSeasonStats(G, tid).players;
+    rows = Object.entries(pl).map(([pid, s]) => [G.players[pid], s]).filter(r => r[0]);
+  } else {
+    const ab = TM(tid).abbr;
+    for (const p of Object.values(G.players)) { const c = p.career.find(x => x.year === src.year && x.tm === ab); if (c) rows.push([p, c]); }
+  }
+  const cats = [['PASSING', 'pYds', 'yds'], ['RUSHING', 'rYds', 'yds'], ['RECEIVING', 'reYds', 'yds'], ['TACKLES', 'tkl', ''], ['SACKS', 'sack', ''], ['INTERCEPTIONS', 'dInt', '']];
+  return `<table class="tbl">${cats.map(([lbl, k, u]) => {
+    const top = rows.filter(r => st(r[1], k) > 0).sort((a, b) => st(b[1], k) - st(a[1], k)).slice(0, 2);
+    return `<tr><td class="px small">${lbl}</td><td>${top.map(([p, s]) => `${pLink(p, true)} <b>${Math.round(st(s, k) * 10) / 10}</b>${u ? ' <span class="dim small">' + u + '</span>' : ''}${p.tid !== tid ? ' <span class="dim small">(now ' + (p.tid >= 0 ? TM(p.tid).abbr : 'FA') + ')</span>' : ''}`).join('<br>') || '<span class="dim">-</span>'}</td></tr>`;
+  }).join('')}</table>`;
+}
+function teamModal(tid, tab) {
+  tab = tab || UI.teamTab || 'stats'; UI.teamTab = tab;
+  const t = TM(tid); const r = teamRatings(G, t);
+  const tb = (k, l) => `<button class="chip ${tab === k ? 'on' : ''}" data-act="team" data-id="${tid}" data-v="${k}">${l}</button>`;
+  let h = `<div class="franchise">${helm(tid, 72)}<div><div class="px big-name">${esc(t.city)} ${esc(t.name)}</div><div class="sub">${t.conf} ${t.div} · ${recStr(t.rec)} · OFF ${r.off} · DEF ${r.def} · OVR ${r.ovr} · Payroll ${fmtM(payroll(G, t))}</div></div></div>`;
+  h += `<div class="mtabs">${tb('stats', 'TEAM STATS')}${tb('roster', 'ROSTER')}${tb('history', 'HISTORY')}</div>`;
+  if (tab === 'stats') {
+    const src = teamStatSource();
+    if (!src || !src.all[tid]) h += '<p class="dim">No games played yet.</p>';
+    else {
+      const v = src.all[tid], rk = src.ranks[tid];
+      const tbl = (keys) => `<table class="tbl">${keys.map(k => { const d = TEAM_STAT_DEFS.find(x => x[0] === k); return `<tr><td>${d[1]}</td><td class="r"><b>${v[k]}</b></td><td class="r">${rankCell(rk[k])}</td></tr>`; }).join('')}</table>`;
+      h += `<p class="dim">${src.label} · ${v.g} games · PF ${v.pf} · PA ${v.pa} · league rank shown on the right (green = top 8, red = bottom 8).</p>`;
+      h += `<div class="tstat-grid"><div><h4 class="px">OFFENSE</h4>${tbl(TS_OFF)}</div><div><h4 class="px">DEFENSE</h4>${tbl(TS_DEF)}<h4 class="px">TEAM LEADERS</h4>${teamLeadersHtml(tid, src)}</div></div>`;
+    }
+  } else if (tab === 'roster') {
+    const ps = t.roster.map(id => G.players[id]).sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
+    h += `<div class="scroll tall"><table class="tbl"><tr><th>#</th><th>NAME</th><th>POS</th><th>AGE</th><th>OVR</th><th>POT</th><th>CONTRACT</th><th>STATUS</th><th>SEASON</th></tr>${ps.map(p => `<tr><td class="dim">${p.num}</td><td>${pLink(p)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot, p.gen)}</td><td class="small">${salCell(p)}</td><td>${statusTag(p)}</td><td class="small">${p.stats.gp ? esc(statLine(p)) : '-'}</td></tr>`).join('')}</table></div>`;
+  } else {
+    h += t.history.length ? `<table class="tbl"><tr><th>YEAR</th><th>W-L</th><th>PF</th><th>PA</th><th>PPG</th><th>YPG</th><th>RESULT</th></tr>${t.history.slice().reverse().map(s => `<tr><td>${s.year}</td><td>${s.w}-${s.l}${s.t ? '-' + s.t : ''}</td><td>${s.pf ?? '-'}</td><td>${s.pa ?? '-'}</td><td>${s.ts ? s.ts.ppg : '-'}</td><td>${s.ts ? s.ts.ypg : '-'}</td><td>${esc(s.result || '')}</td></tr>`).join('')}</table>` : '<p class="dim">No completed seasons yet.</p>';
+  }
+  openModal(h, true);
+}
+const TS_COLS = [['ppg', 'PPG'], ['papg', 'PA/G'], ['ypg', 'YDS/G'], ['pypg', 'PASS/G'], ['rypg', 'RUSH/G'], ['oypg', 'OPP YDS/G'], ['diff', 'TO +/-'], ['sack', 'SACKS'], ['sk', 'SKD']];
+function leagueTeamStatsTable() {
+  const src = teamStatSource();
+  if (!src) return '<p class="dim">No games played yet.</p>';
+  const k = UI.tsSort || 'ppg'; const dir = (TEAM_STAT_DEFS.find(d => d[0] === k) || [0, 0, 1])[2];
+  const rows = G.teams.map((t, i) => ({ t, v: src.all[i] })).filter(x => x.v).sort((a, b) => (b.v[k] - a.v[k]) * dir);
+  return panel(`TEAM STATS · ${src.label}`, `<p class="dim small">Click a column to sort; click a team for its full stat sheet.</p><div class="scroll"><table class="tbl"><tr><th>#</th><th>TEAM</th>${TS_COLS.map(([c, l]) => `<th class="sort ${k === c ? 'on' : ''}" data-act="tsSort" data-k="${c}">${l}</th>`).join('')}</tr>${rows.map((x, i) => `<tr class="${x.t.id === G.userTeam ? 'me-row' : ''}"><td class="dim">${i + 1}</td><td>${teamLink(x.t.id)}</td>${TS_COLS.map(([c]) => `<td>${x.v[c]}</td>`).join('')}</tr>`).join('')}</table></div>`);
 }

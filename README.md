@@ -7,6 +7,8 @@ Take over one of 32 franchises and run it season after season:
 - **Simulated football** - every play is simulated, producing full box scores, league leaders and watchable pixel-field replays of your games.
 - **Player careers** - ratings grow toward potential, peak, then decline with age. Injuries and illness sideline players, and serious injuries can sap athleticism for good.
 - **Draft & scouting** - a new draft class every year. Scouts report in during the season and at the Combine; spend scouting points to see through the fog. Each prospect has a college report of 3-5 traits tied to their real ratings, and every pick is graded on where it went vs. where the player truly ranked, with a full draft review at the end.
+- **Generational talents** - roughly one draft class in three has an "S" potential prospect who arrives NFL-ready and stays elite for years longer than normal.
+- **Team stats** - open any team for its season stat sheet with league ranks and team leaders; a sortable league-wide team stats table lives under Leaders.
 - **Depth chart & training** - set your own depth chart any time, and pick players for weekly focus training (empty slots are auto-assigned).
 - **Player editor** - edit any player's ratings and bio.
 - **Free agency review** - see what you signed, who left and how your team rating moved, with a grade.

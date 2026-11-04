@@ -426,7 +426,7 @@ function computeDraftOrder(L) {
   return L.teams.slice().sort((a, b) => { const ka = key(a), kb = key(b); for (let i = 0; i < 3; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i]; return Math.random() - 0.5; }).map(t => t.id);
 }
 function retireChance(p) {
-  const pk = PEAK[p.pos][1];
+  const pk = PEAK[p.pos][1] + (p.gen ? GEN_PEAK_BONUS : 0);
   let c = 0;
   if (p.age >= 39) c = 0.9; else if (p.age >= pk + 5) c = 0.6; else if (p.age >= pk + 3) c = 0.3; else if (p.age > pk) c = 0.08;
   if (p.ovr < 55 && p.age >= 29) c += 0.3;
@@ -439,7 +439,7 @@ function careerTotals(p) { const t = emptyStats(); p.career.forEach(c => addStat
 function runOffseason(L) {
   const season = L.year;
   for (const t of L.teams) {
-    t.history.push({ year: season, w: t.rec.w, l: t.rec.l, t: t.rec.t, pf: t.rec.pf, pa: t.rec.pa, seed: L.playoffs ? seedOf(L, t.id) : 0, result: playoffResult(L, t.id) });
+    t.history.push({ year: season, w: t.rec.w, l: t.rec.l, t: t.rec.t, pf: t.rec.pf, pa: t.rec.pa, seed: L.playoffs ? seedOf(L, t.id) : 0, result: playoffResult(L, t.id), ts: teamSeasonStats(L, t.id).v });
     t.prevWins = t.rec.w;
   }
   for (const p of Object.values(L.players)) {
@@ -509,7 +509,20 @@ function generateDraftClass(L, n) {
     updateScout(p);
     L.players[p.id] = p; ids.push(p.id);
   }
+  const nGen = R.chance(0.3) ? (R.chance(0.12) ? 2 : 1) : 0;
+  for (let i = 0; i < nGen; i++) { const p = makeGenerational(L); L.players[p.id] = p; ids.push(p.id); }
   return sortBoard(L, ids);
+}
+// A once-in-a-generation prospect: starts around 80-86 OVR with 96-99 potential.
+function makeGenerational(L) {
+  const pos = R.weighted(POSITIONS.filter(ps => ps !== 'K' && ps !== 'P'), ps => POS_DRAFT_W[ps] * POS_VALUE[ps]);
+  const p = createPlayer(L, pos, R.rand(80, 86), R.int(20, 22));
+  p.tid = -2; p.exp = 0; p.gen = true;
+  assignTraits(p, true);
+  p.pot = clamp(R.int(96, 99), p.ovr + 6, 99);
+  p.sc = 0; p.errO = R.gauss(0, 0.4); p.errP = R.gauss(0, 0.3);  // everyone has seen the tape
+  updateScout(p);
+  return p;
 }
 
 function draftPlayer(L, pid) {
@@ -598,7 +611,7 @@ function recommendProspects(L, team, n, ids) {
     if (r.rank <= 3) why.push(`#${r.rank} on the board`);
     if (nd.level !== 'LOW') why.push(`${nd.level} need at ${r.p.pos}`);
     if (r.startsNow) why.push(`could start now (${r.p.sOvr} vs your ${nd.worstStarter})`);
-    if (r.p.sPot >= 85) why.push(`high ceiling (${potGrade(r.p.sPot)})`);
+    if (r.p.sPot >= 85) why.push(`high ceiling (${potGrade(r.p.sPot, r.p.gen)})`);
     if (!why.length) why.push('best value available');
     r.why = why;
   }
@@ -648,6 +661,7 @@ function startSeason(L) {
   L.schedule = makeSchedule(L.year, L.lastRanks);
   L.week = 1; L.phase = 'regular';
   L.prospects = generateDraftClass(L, 300);
+  announceGenerational(L);
   news(L, `The ${L.year} regular season begins! Scouts are on the road evaluating the ${L.year + 1} draft class.`, L.userTeam);
   return null;
 }

@@ -35,7 +35,7 @@ function negModal(pid, ctx) {
   const interest = ctx === 'fa' && G.phase === 'freeagency' && p.ovr >= 70 ? '<span class="gold">Several teams are interested - expect a bidding war.</span>' : ctx === 'fa' && G.phase !== 'freeagency' ? '<span class="dim">Unsigned free agent - may take a discount.</span>' : '';
   const h = `<div class="px small center">${title}</div>
    <div class="pcard" style="--c1:${p.tid >= 0 ? TM(p.tid).c1 : '#444'}"><img class="psprite" src="${Sprites.player(p, p.tid >= 0 ? TM(p.tid) : null, 6)}" alt=""><div class="pinfo">
-     <div class="px pname">${esc(fullName(p))}</div><div>${p.pos} · age ${p.age} · OVR ${ovrB(p.ovr)} · POT ${potB(p.pot)} · ${statusTag(p)}</div>
+     <div class="px pname">${esc(fullName(p))}</div><div>${p.pos} · age ${p.age} · OVR ${ovrB(p.ovr)} · POT ${potB(p.pot, p.gen)} · ${statusTag(p)}</div>
      <div class="dim">Last season: ${last ? `${last.year} ${last.tm}: ${esc(statLine(p, last))}` : 'none'}</div>
      <div class="dim">Career: ${esc(careerBrief(p))}</div>
      <div>Current deal: ${p.contract ? esc(contractStr(G, p)) : 'none'}</div></div></div>
@@ -75,7 +75,7 @@ function vRecords() {
   let h = `<p class="dim">The league record book. Records set by players in your league are highlighted; current-season marks update live.</p><div class="records">`;
   for (const [sc, label] of scopes) {
     const defs = REC_DEFS.filter(d => d[1] === sc); if (!defs.length) continue;
-    h += panel(label, `<table class="tbl">${defs.map(d => { const r = G.records[d[0]]; const mine = r.pid !== null && r.pid !== undefined || r.tid !== undefined; const live = r.year === G.year && (sc === 'season' || sc === 'tseason'); return `<tr class="${mine ? 'rec-row' : ''}"><td>${d[2]}</td><td class="r"><b class="${mine ? 'gold' : ''}">${r.val.toLocaleString()}</b></td><td>${r.pid && G.players[r.pid] ? pLink(G.players[r.pid]) : esc(r.name || r.abbr)}${live ? ' <span class="blink2 small good">LIVE</span>' : ''}</td><td class="dim small">${r.abbr} ${r.year}</td></tr>`; }).join('')}</table>`);
+    h += panel(label, `<table class="tbl">${defs.map(d => { const r = G.records[d[0]]; const mine = r.pid !== null && r.pid !== undefined || r.tid !== undefined; const live = r.year === G.year && (sc === 'season' || sc === 'tseason'); return `<tr class="${mine ? 'rec-row' : ''}"><td>${d[2]}</td><td class="r"><b class="${mine ? 'gold' : ''}">${r.val.toLocaleString()}</b></td><td class="rholder">${r.pid && G.players[r.pid] ? pLink(G.players[r.pid]) : esc(r.name || r.abbr)}${live ? ' <span class="blink2 small good">LIVE</span>' : ''}<div class="dim small">${r.name ? r.abbr + ' · ' : ''}${r.year}</div></td></tr>`; }).join('')}</table>`);
   }
   h += `</div>`;
   const log = G.recordLog || [];

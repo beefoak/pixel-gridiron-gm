@@ -104,7 +104,13 @@ tr.asset{cursor:pointer}tr.asset:hover td{background:rgba(77,163,255,.08)}tr.ass
 .stag{font-size:8px;color:var(--acc)}.smeta{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .st-RECORD,.st-CHAMPION,.st-AWARD{border-left-color:#ff9f1c}.st-INJURY{border-left-color:var(--bad)}.st-RETURN{border-left-color:var(--good)}
 .st-RIVALRY,.st-PREVIEW{border-left-color:#c48cff}.st-TRADE,.st-SIGNING,.st-FREEAGENCY,.st-CAP{border-left-color:var(--blue)}.st-CHASE,.st-MILESTONE{border-left-color:var(--acc)}
-.records{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
+.records{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:14px}
+.records .panel{min-width:0;overflow:hidden}.records .tbl{width:100%}.records td{white-space:normal;vertical-align:top}.records .rholder{word-break:break-word}.records .rholder .small{font-size:14px;line-height:1}
+.pot.pot-s{color:#111;background:linear-gradient(90deg,#ff5ec4,#ffd23f,#5ee0ff);padding:1px 5px;border:2px solid #000;animation:shine 2.4s linear infinite;background-size:200% 100%}
+@keyframes shine{to{background-position:200% 0}}
+.mtabs{display:flex;gap:4px;margin:10px 0;flex-wrap:wrap}
+.rk-good{color:var(--good)}.rk-bad{color:var(--bad)}
+.tstat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media (max-width:700px){.tstat-grid{grid-template-columns:1fr}}
 input[type=number]{font-family:'VT323',monospace;font-size:20px;background:var(--panel2);color:var(--ink);border:2px solid var(--line);padding:2px 6px;width:140px}
 .name-edit{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--c1),var(--panel2));border:2px solid #000;padding:4px 6px;margin:4px 0}
 .name-edit input{font-family:'VT323',monospace;font-size:18px;background:#0a0d1a;color:var(--ink);border:2px solid var(--line);padding:1px 4px}
@@ -166,17 +172,17 @@ ul.rp-log li.td,ul.rp-log li.fg{color:var(--acc)}ul.rp-log li.to{color:var(--bad
 <div id="app"></div>
 <div id="modal" class="modal hidden"></div>
 <div id="toast"></div>
-<script src="js/core.js?v=7"></script>
-<script src="js/schedule.js?v=7"></script>
-<script src="js/sim.js?v=7"></script>
-<script src="js/league.js?v=7"></script>
-<script src="js/gm.js?v=7"></script>
-<script src="js/biz.js?v=7"></script>
-<script src="js/dev.js?v=7"></script>
-<script src="js/sprites.js?v=7"></script>
-<script src="js/ui.js?v=7"></script>
-<script src="js/ui_gm.js?v=7"></script>
-<script src="js/ui_biz.js?v=7"></script>
-<script src="js/ui_dev.js?v=7"></script>
+<script src="js/core.js?v=8"></script>
+<script src="js/schedule.js?v=8"></script>
+<script src="js/sim.js?v=8"></script>
+<script src="js/league.js?v=8"></script>
+<script src="js/gm.js?v=8"></script>
+<script src="js/biz.js?v=8"></script>
+<script src="js/dev.js?v=8"></script>
+<script src="js/sprites.js?v=8"></script>
+<script src="js/ui.js?v=8"></script>
+<script src="js/ui_gm.js?v=8"></script>
+<script src="js/ui_biz.js?v=8"></script>
+<script src="js/ui_dev.js?v=8"></script>
 </body>
 </html>

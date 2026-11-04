@@ -12,7 +12,7 @@ function teamLink(tid, full) { const t = TM(tid); return `<a class="tlink" data-
 function pLink(p, short) { return `<a class="plink" data-act="player" data-id="${p.id}">${esc(short ? shortName(p) : fullName(p))}</a>`; }
 function ovrCls(v) { return v >= 90 ? 'o-elite' : v >= 80 ? 'o-great' : v >= 70 ? 'o-good' : v >= 60 ? 'o-avg' : 'o-low'; }
 function ovrB(v) { return `<span class="ovr ${ovrCls(v)}">${v}</span>`; }
-function potB(v) { return `<span class="pot">${potGrade(v)}</span>`; }
+function potB(v, gen) { return gen ? '<span class="pot pot-s" title="Generational talent">S</span>' : `<span class="pot">${potGrade(v)}</span>`; }
 function statusTag(p) { if (!p.injury) return '<span class="ok">OK</span>'; return `<span class="${p.injury.ill ? 'ill' : 'inj'}">${p.ir ? 'IR ' : ''}${esc(p.injury.name)} ${p.injury.weeks}w</span>`; }
 function passerRating(s) { const a = st(s, "pAtt"); if (!a) return 0; const c = clamp((st(s, "pCmp") / a - 0.3) * 5, 0, 2.375), y = clamp((st(s, "pYds") / a - 3) * 0.25, 0, 2.375), t = clamp(st(s, "pTd") / a * 20, 0, 2.375), i = clamp(2.375 - st(s, "pInt") / a * 25, 0, 2.375); return (c + y + t + i) / 6 * 100; }
 const f1 = (n, d) => d ? (n / d).toFixed(1) : '0.0';
@@ -222,7 +222,7 @@ function rosterTable(tid, mine) {
   for (const p of ps) {
     const last = p.career[p.career.length - 1];
     const line = (isOffseason()) ? (last && last.year === G.year - 1 ? statLine(p, last) : p.exp === 0 ? 'Rookie' : '-') : (p.stats.gp ? statLine(p) : '-');
-    h += `<tr><td class="dim">${p.num}</td><td>${pLink(p)}${p.exp === 0 ? ' <span class="rk">R</span>' : ''}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot)}</td><td>${p.exp}</td><td class="dim">${htStr(p.ht)} ${p.wt}</td><td>${salCell(p)}</td><td>${statusTag(p)}</td><td class="small">${esc(line)}</td>${mine ? `<td>${negButton(p)}<button class="btn tiny danger" data-act="cut" data-id="${p.id}">CUT</button></td>` : ''}</tr>`;
+    h += `<tr><td class="dim">${p.num}</td><td>${pLink(p)}${p.exp === 0 ? ' <span class="rk">R</span>' : ''}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot, p.gen)}</td><td>${p.exp}</td><td class="dim">${htStr(p.ht)} ${p.wt}</td><td>${salCell(p)}</td><td>${statusTag(p)}</td><td class="small">${esc(line)}</td>${mine ? `<td>${negButton(p)}<button class="btn tiny danger" data-act="cut" data-id="${p.id}">CUT</button></td>` : ''}</tr>`;
   }
   return h + `</table></div>`;
 }
@@ -314,7 +314,9 @@ function teamGamesFor(p, s, po) {
 function vLeaders() {
   const po = UI.leadMode === 'po';
   const ps = Object.values(G.players).filter(p => p.tid >= 0 || p.tid === -1);
-  let h = `<div class="filters"><button class="chip ${!po ? 'on' : ''}" data-act="leadMode" data-v="reg">REGULAR SEASON</button><button class="chip ${po ? 'on' : ''}" data-act="leadMode" data-v="po">PLAYOFFS</button></div><div class="leaders">`;
+  let h = `<div class="filters"><button class="chip ${!po ? 'on' : ''}" data-act="leadMode" data-v="reg">REGULAR SEASON</button><button class="chip ${po ? 'on' : ''}" data-act="leadMode" data-v="po">PLAYOFFS</button><button class="chip ${UI.leadMode === 'team' ? 'on' : ''}" data-act="leadMode" data-v="team">TEAM STATS</button></div>`;
+  if (UI.leadMode === 'team') return h + leagueTeamStatsTable();
+  h += `<div class="leaders">`;
   for (const [label, fn] of LEADERS) {
     const rows = ps.map(p => { const s = po ? p.pstats : p.stats; return [p, fn(s, teamGamesFor(p, s, po))]; }).filter(x => x[1] !== null && x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
     h += panel(label, rows.length ? `<table class="tbl">${rows.map(([p, v], i) => `<tr class="${p.tid === G.userTeam ? 'me-row' : ''}"><td class="dim">${i + 1}</td><td>${p.tid >= 0 ? helm(p.tid, 16) : ''} ${pLink(p, true)}</td><td class="dim">${p.pos}</td><td class="r"><b>${v}</b></td></tr>`).join('')}</table>` : '<p class="dim">No stats yet.</p>', 'lead');
@@ -341,7 +343,7 @@ function vFA() {
   h += posFilter(UI.faPos, 'fapos');
   h += `<div class="scroll"><table class="tbl"><tr><th>NAME</th><th>POS</th><th>AGE</th><th>OVR</th><th>POT</th><th>ASKING</th><th>STATUS</th><th>LAST SEASON</th><th>CAREER</th><th></th></tr>${ps.slice(0, 150).map(p => {
     const last = p.career[p.career.length - 1];
-    return `<tr><td>${pLink(p)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot)}</td><td>${(() => { const a = askingContract(G, p, 'fa'); return `${fmtM(a.sal)} <span class="dim small">×${a.yrs}</span>`; })()}</td><td>${statusTag(p)}</td><td class="small">${last ? `${last.year} ${last.tm}: ${esc(statLine(p, last))}` : p.exp === 0 ? 'Undrafted rookie' : '-'}</td><td class="small dim">${esc(careerBrief(p))}</td><td>${negButton(p)}</td></tr>`;
+    return `<tr><td>${pLink(p)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot, p.gen)}</td><td>${(() => { const a = askingContract(G, p, 'fa'); return `${fmtM(a.sal)} <span class="dim small">×${a.yrs}</span>`; })()}</td><td>${statusTag(p)}</td><td class="small">${last ? `${last.year} ${last.tm}: ${esc(statLine(p, last))}` : p.exp === 0 ? 'Undrafted rookie' : '-'}</td><td class="small dim">${esc(careerBrief(p))}</td><td>${negButton(p)}</td></tr>`;
   }).join('')}</table></div>`;
   return h;
 }
@@ -370,10 +372,10 @@ function vDraft() {
   else if (UI.dPos !== 'ALL') ps = ps.filter(p => p.pos === UI.dPos);
   h += `<div class="grid-draft"><div>`;
   if (recs.length) {
-    h += panel(`RECOMMENDED PICKS${nextMine && !myTurn ? ` <span class="dim small">(if picking now - your next pick is #${nextMine.ovr})</span>` : ''}`, `<table class="tbl recs">${recs.map((r, i) => `<tr><td class="px small gold">${i + 1}</td><td>${pLink(r.p)}<div class="dim small">${esc(r.why.join(' · '))}</div></td><td>${r.p.pos} ${lvl(needs[r.p.pos].level)}</td><td>${ovrB(r.p.sOvr)} ${potB(r.p.sPot)}</td><td class="dim small">RK ${r.rank}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${r.p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table>`, 'recpanel');
+    h += panel(`RECOMMENDED PICKS${nextMine && !myTurn ? ` <span class="dim small">(if picking now - your next pick is #${nextMine.ovr})</span>` : ''}`, `<table class="tbl recs">${recs.map((r, i) => `<tr><td class="px small gold">${i + 1}</td><td>${pLink(r.p)}<div class="dim small">${esc(r.why.join(' · '))}</div></td><td>${r.p.pos} ${lvl(needs[r.p.pos].level)}</td><td>${ovrB(r.p.sOvr)} ${potB(r.p.sPot, r.p.gen)}</td><td class="dim small">RK ${r.rank}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${r.p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table>`, 'recpanel');
   }
   h += `<div class="filters">${['ALL', 'NEEDS', ...POSITIONS].map(x => `<button class="chip ${UI.dPos === x ? 'on' : ''}" data-act="dpos" data-v="${x}">${x === 'NEEDS' ? '★ MY NEEDS' : x}</button>`).join('')}</div>`;
-  h += panel('BIG BOARD (SCOUTED)', `<div class="scroll tall"><table class="tbl"><tr><th>RK</th><th>NAME</th><th>POS</th><th>FIT</th><th>AGE</th><th>COLLEGE</th><th>PROJ</th><th>POT</th><th>HT/WT</th><th>SPD</th><th></th></tr>${ps.slice(0, 160).map(p => `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${D.pool.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}${p.traits ? `<div class="traits-sm">${visibleTraits(p).map(t => `<span class="${t[3] > 0 ? 'tp' : 'tn'}">${t[3] > 0 ? '+' : '-'}${esc(t[0])}</span>`).join(' · ')}</div>` : ''}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${ovrB(p.sOvr)}</td><td>${potB(p.sPot)}</td><td class="dim">${htStr(p.ht)} ${p.wt}</td><td>${p.attrs.spd}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table></div>`);
+  h += panel('BIG BOARD (SCOUTED)', `<div class="scroll tall"><table class="tbl"><tr><th>RK</th><th>NAME</th><th>POS</th><th>FIT</th><th>AGE</th><th>COLLEGE</th><th>PROJ</th><th>POT</th><th>HT/WT</th><th>SPD</th><th></th></tr>${ps.slice(0, 160).map(p => `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${D.pool.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}${p.traits ? `<div class="traits-sm">${visibleTraits(p).map(t => `<span class="${t[3] > 0 ? 'tp' : 'tn'}">${t[3] > 0 ? '+' : '-'}${esc(t[0])}</span>`).join(' · ')}</div>` : ''}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${ovrB(p.sOvr)}</td><td>${potB(p.sPot, p.gen)}</td><td class="dim">${htStr(p.ht)} ${p.wt}</td><td>${p.attrs.spd}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table></div>`);
   h += `</div><div>`;
   const nlist = POSITIONS.map(ps2 => needs[ps2]).sort((a, b) => b.need - a.need);
   h += panel('TEAM NEEDS', `<table class="tbl needs">${nlist.map(n => `<tr><td><b>${n.pos}</b></td><td>${lvl(n.level)}</td><td class="nbar"><div class="bar"><i class="n-${n.level.toLowerCase()}" style="width:${n.need * 10}%"></i></div></td><td class="dim small">${n.stAvg} / ${n.lg}</td></tr>${n.reasons.length && n.level !== 'LOW' ? `<tr class="why"><td></td><td colspan="3" class="dim small">${esc(n.reasons.join('; '))}</td></tr>` : ''}`).join('')}</table><p class="dim small">Starter avg OVR / league avg. Need factors in starter quality, depth, aging starters, long injuries and young successors already on the roster.</p>`);
@@ -455,7 +457,7 @@ function playerModal(pid) {
     <div class="pinfo"><div class="px pname">#${p.num} ${esc(fullName(p))}</div>
       <div>${p.pos} · ${t ? teamLink(t.id, true) : prospect ? 'Draft Prospect' : 'Free Agent'}</div>
       <div class="dim">Age ${p.age} · ${htStr(p.ht)} ${p.wt} lbs · ${esc(p.college)} · Exp ${p.exp} yr · Drafted: ${dr}</div>${p.contract && !prospect ? `<div>Contract: <b>${esc(contractStr(G, p))}</b> · market ${fmtM(marketSalary(G, p))}</div>` : p.tid === -1 ? `<div>Free agent · asking ${fmtM(askingContract(G, p, 'fa').sal)}/yr</div>` : ''}
-      <div class="ratings"><div>OVR ${prospect ? ovrB(p.sOvr) + ` <span class="dim small">${SCOUT_SPREAD[p.sc || 0] ? '±' + Math.ceil(SCOUT_SPREAD[p.sc || 0]) : 'exact'} · ${SCOUT_LABELS[p.sc || 0]}</span>` : ovrB(p.ovr)}</div><div>POTENTIAL ${prospect && !p.sc ? '<span class="pot">?</span>' : potB(prospect ? p.sPot : p.pot)}</div><div>${statusTag(p)}</div></div>
+      <div class="ratings"><div>OVR ${prospect ? ovrB(p.sOvr) + ` <span class="dim small">${SCOUT_SPREAD[p.sc || 0] ? '±' + Math.ceil(SCOUT_SPREAD[p.sc || 0]) : 'exact'} · ${SCOUT_LABELS[p.sc || 0]}</span>` : ovrB(p.ovr)}</div><div>POTENTIAL ${prospect && !p.sc && !p.gen ? '<span class="pot">?</span>' : potB(prospect ? p.sPot : p.pot, p.gen)}</div><div>${statusTag(p)}</div></div>
       ${p.awards.length ? `<div class="gold small">★ ${esc(summarizeAwards(p.awards))}</div>` : ''}
       <div class="pact">${p.tid === G.userTeam && !G.draft ? `<button class="btn tiny danger" data-act="cut" data-id="${p.id}">RELEASE</button>` : ''}${negButton(p)}<button class="btn tiny alt" data-act="editPlayer" data-id="${p.id}">EDIT PLAYER</button></div>
     </div></div>`;
@@ -491,14 +493,7 @@ function playerModal(pid) {
   openModal(h, true);
 }
 
-function teamModal(tid) {
-  const t = TM(tid); const r = teamRatings(G, t);
-  const ps = t.roster.map(id => G.players[id]).sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
-  let h = `<div class="franchise">${helm(tid, 72)}<div><div class="px big-name">${esc(t.city)} ${esc(t.name)}</div><div class="sub">${t.conf} ${t.div} · ${recStr(t.rec)} · OFF ${r.off} · DEF ${r.def} · OVR ${r.ovr}</div></div></div>`;
-  h += `<div class="scroll tall"><table class="tbl"><tr><th>#</th><th>NAME</th><th>POS</th><th>AGE</th><th>OVR</th><th>POT</th><th>STATUS</th><th>SEASON</th></tr>${ps.map(p => `<tr><td class="dim">${p.num}</td><td>${pLink(p)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot)}</td><td>${statusTag(p)}</td><td class="small">${p.stats.gp ? esc(statLine(p)) : '-'}</td></tr>`).join('')}</table></div>`;
-  if (t.history.length) h += `<h4 class="px">HISTORY</h4><table class="tbl">${t.history.slice().reverse().map(s => `<tr><td>${s.year}</td><td>${s.w}-${s.l}${s.t ? '-' + s.t : ''}</td><td>${s.result}</td></tr>`).join('')}</table>`;
-  openModal(h, true);
-}
+// Team view lives in ui_dev.js
 
 function findGame(id) { return G.schedule.find(g => g.id === id) || (G.playoffs && G.playoffs.games.find(g => g.id === id)); }
 function scoreboard(g, q, clk) {
@@ -643,7 +638,7 @@ function onClick(e) {
     case 'autoFill': { const t = TM(G.userTeam); aiFillRoster(G, t); persist(); render(); toast(`Roster filled to ${activeRoster(G, t).length}.`); break; }
     case 'startSeason': { const err = startSeason(G); if (err) toast(err); else { persist(); UI.tab = 'home'; UI.schedWeek = null; render(); } break; }
     case 'player': playerModal(+id); break;
-    case 'team': teamModal(+id); break;
+    case 'team': teamModal(+id, v); break;
     case 'box': stopReplay(); boxModal(id); break;
     case 'boxTab': boxModal(id, v); break;
     case 'watch': watchGame(id); break;

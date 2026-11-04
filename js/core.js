@@ -153,22 +153,25 @@ function createPlayer(L, pos, T, age) {
   return p;
 }
 
-function potGrade(v) { return v >= 90 ? 'A+' : v >= 85 ? 'A' : v >= 80 ? 'B+' : v >= 75 ? 'B' : v >= 70 ? 'C+' : v >= 65 ? 'C' : v >= 60 ? 'D' : 'F'; }
+// Generational ("S") talents: rare, NFL-ready on day one, and they age gracefully.
+const GEN_PEAK_BONUS = 3;
+function potGrade(v, gen) { return gen ? 'S' : v >= 90 ? 'A+' : v >= 85 ? 'A' : v >= 80 ? 'B+' : v >= 75 ? 'B' : v >= 70 ? 'C+' : v >= 65 ? 'C' : v >= 60 ? 'D' : 'F'; }
 function htStr(h) { return Math.floor(h / 12) + "'" + (h % 12) + '"'; }
 function fullName(p) { return p.fn + ' ' + p.ln; }
 function shortName(p) { return p.temp ? 'Fill-in' : p.fn[0] + '. ' + p.ln; }
 
 // Yearly development: young players grow toward potential, vets decline past peak window.
 function progressPlayer(p) {
-  const pk = PEAK[p.pos], w = OVR_WEIGHTS[p.pos], before = p.ovr;
+  const pk0 = PEAK[p.pos], w = OVR_WEIGHTS[p.pos], before = p.ovr;
+  const pk = p.gen ? [pk0[0], pk0[1] + GEN_PEAK_BONUS] : pk0;
   let delta;
   if (p.age <= pk[0]) { const room = Math.max(0, p.pot - p.ovr); delta = room * R.rand(0.12, 0.5) + R.gauss(0, 1.8); }
   else if (p.age <= pk[1]) { const room = Math.max(0, p.pot - p.ovr); delta = room * R.rand(0, 0.35) + R.gauss(0, 1.6); }
-  else { const yrs = p.age - pk[1]; delta = -(R.rand(0.5, 2.5) + yrs * R.rand(0.6, 1.6)) + R.gauss(0, 1.2); }
+  else { const yrs = p.age - pk[1]; delta = (-(R.rand(0.5, 2.5) + yrs * R.rand(0.6, 1.6)) + R.gauss(0, 1.2)) * (p.gen ? 0.5 : 1); }
   if (p.age < 26 && R.chance(0.05)) delta += R.rand(3, 8);   // breakout
-  if (R.chance(0.04)) delta -= R.rand(2, 5);                 // bad offseason
+  if (R.chance(p.gen ? 0.015 : 0.04)) delta -= R.rand(2, 5); // bad offseason
   for (const k in w) p.attrs[k] += delta * R.rand(0.6, 1.4);
-  if (p.age > pk[1]) { p.attrs.spd -= R.rand(0.3, 1.8); p.attrs.agi -= R.rand(0.2, 1.2); }
+  if (p.age > pk[1]) { const k = p.gen ? 0.5 : 1; p.attrs.spd -= R.rand(0.3, 1.8) * k; p.attrs.agi -= R.rand(0.2, 1.2) * k; }
   else p.attrs.awr += R.rand(0, 2);
   clampAttrs(p);
   p.ovr = calcOvr(p);

@@ -10,7 +10,7 @@ function assetRow(a, side, sel, myNeeds) {
   let info;
   if (a.type === 'player') {
     const p = a.p; const nd = myNeeds[p.pos];
-    info = `${ovrB(p.ovr)} ${pLink(p)} <span class="dim">${p.pos} · ${p.age}y · POT ${potGrade(p.pot)}${p.injury ? ' · <span class="inj">' + esc(p.injury.name) + '</span>' : ''}</span>`
+    info = `${ovrB(p.ovr)} ${pLink(p)} <span class="dim">${p.pos} · ${p.age}y · POT ${potGrade(p.pot, p.gen)}${p.injury ? ' · <span class="inj">' + esc(p.injury.name) + '</span>' : ''}</span>`
       + (side === 'theirs' ? ` <span class="need n-${nd.level.toLowerCase()}" title="Your need at ${p.pos}">${nd.level}</span>` : '')
       + (a.starts ? ' <span class="dim small">starter</span>' : '');
   } else {
@@ -91,7 +91,7 @@ function vScouting() {
   const lvl = (l) => `<span class="need n-${l.toLowerCase()}">${l}</span>`;
   h += panel(`${year} BIG BOARD (YOUR SCOUTS' VIEW)`, `<div class="scroll tall"><table class="tbl"><tr><th>RK</th><th>NAME</th><th>POS</th><th>FIT</th><th>AGE</th><th>COLLEGE</th><th>SCOUTED</th><th>PROJ</th><th>POT</th><th>40YD</th><th>TREND</th><th></th></tr>${ps.slice(0, 160).map(p => {
     const sc = p.sc || 0; const sp = SCOUT_SPREAD[sc];
-    return `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${board.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${scoutPips(sc)}</td><td>${ovrB(p.sOvr)}${sp ? ` <span class="dim small">±${Math.ceil(sp)}</span>` : ''}</td><td>${sc === 0 ? '<span class="dim">?</span>' : potB(p.sPot)}</td><td>${p.combine ? p.combine.forty : '<span class="dim">-</span>'}</td><td>${p.trend ? (p.trend > 0 ? `<span class="good">+${p.trend}</span>` : `<span class="bad">${p.trend}</span>`) : ''}</td><td>${sc < 3 ? `<button class="btn tiny" data-act="scout" data-id="${p.id}" ${G.scoutPts < scoutCost(p) ? 'disabled' : ''}>SCOUT ${scoutCost(p)}</button>` : '<span class="good small">FULL</span>'}</td></tr>`;
+    return `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${board.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${scoutPips(sc)}</td><td>${ovrB(p.sOvr)}${sp ? ` <span class="dim small">±${Math.ceil(sp)}</span>` : ''}</td><td>${sc === 0 && !p.gen ? '<span class="dim">?</span>' : potB(p.sPot, p.gen)}</td><td>${p.combine ? p.combine.forty : '<span class="dim">-</span>'}</td><td>${p.trend ? (p.trend > 0 ? `<span class="good">+${p.trend}</span>` : `<span class="bad">${p.trend}</span>`) : ''}</td><td>${sc < 3 ? `<button class="btn tiny" data-act="scout" data-id="${p.id}" ${G.scoutPts < scoutCost(p) ? 'disabled' : ''}>SCOUT ${scoutCost(p)}</button>` : '<span class="good small">FULL</span>'}</td></tr>`;
   }).join('')}</table></div>`);
   return h;
 }

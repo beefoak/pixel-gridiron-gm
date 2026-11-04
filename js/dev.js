@@ -277,6 +277,62 @@ function buildFAReview(L) {
   return R2;
 }
 
+function announceGenerational(L) {
+  for (const id of L.prospects || []) {
+    const p = L.players[id]; if (!p.gen) continue;
+    story(L, 'DRAFT', `Generational talent: ${fullName(p)}`, `Scouts are calling ${p.college} ${p.pos} ${fullName(p)} a once-in-a-generation prospect for the ${L.year + 1} Draft - pro-ready now with a ceiling nobody else in the class can touch.`, [], p.id);
+    news(L, `Generational prospect alert: ${p.pos} ${fullName(p)} (${p.college}) headlines the ${L.year + 1} draft class.`, -1);
+  }
+}
+
+// ---------------- Team season stats ----------------
+const TEAM_STAT_DEFS = [
+  ['ppg', 'Points / game', 1], ['papg', 'Points allowed / game', -1], ['ypg', 'Yards / game', 1], ['pypg', 'Pass yards / game', 1], ['rypg', 'Rush yards / game', 1],
+  ['oypg', 'Yards allowed / game', -1], ['opypg', 'Pass yards allowed / game', -1], ['orypg', 'Rush yards allowed / game', -1],
+  ['to', 'Turnovers', -1], ['tk', 'Takeaways', 1], ['diff', 'Turnover margin', 1], ['sack', 'Sacks', 1], ['sk', 'Sacks allowed', -1], ['fd', 'First downs / game', 1],
+  ['tdp', 'Pass TD', 1], ['tdr', 'Rush TD', 1], ['fgp', 'FG %', 1], ['cmp', 'Completion %', 1],
+];
+function teamSeasonStats(L, tid) {
+  const t = { g: 0, pf: 0, pa: 0, py: 0, ry: 0, opy: 0, ory: 0, to: 0, tk: 0, sack: 0, sk: 0, fd: 0, tdp: 0, tdr: 0, fgm: 0, fga: 0, pc: 0, pa2: 0 };
+  const players = {};
+  for (const g of L.schedule) {
+    if (!g.played || (g.home !== tid && g.away !== tid) || !g.box) continue;
+    const home = g.home === tid;
+    t.g++; t.pf += home ? g.hs : g.as; t.pa += home ? g.as : g.hs;
+    if (g.tstat) t.fd += (home ? g.tstat[0] : g.tstat[1]).fd || 0;
+    for (const pid in g.box) {
+      const b = g.box[pid];
+      if (b.tid === tid) {
+        t.py += st(b, 'pYds'); t.ry += st(b, 'rYds'); t.to += st(b, 'pInt') + st(b, 'fum'); t.sk += st(b, 'sk'); t.sack += st(b, 'sack');
+        t.tdp += st(b, 'pTd'); t.tdr += st(b, 'rTd'); t.fgm += st(b, 'fgm'); t.fga += st(b, 'fga'); t.pc += st(b, 'pCmp'); t.pa2 += st(b, 'pAtt');
+        t.tk += st(b, 'dInt') + st(b, 'ff') * 0.5;
+        if (!players[pid]) players[pid] = emptyStats();
+        addStats(players[pid], b);
+      } else { t.opy += st(b, 'pYds'); t.ory += st(b, 'rYds'); }
+    }
+  }
+  t.tk = Math.round(t.tk);
+  const g = t.g || 1;
+  const v = {
+    ppg: t.pf / g, papg: t.pa / g, ypg: (t.py + t.ry) / g, pypg: t.py / g, rypg: t.ry / g, oypg: (t.opy + t.ory) / g, opypg: t.opy / g, orypg: t.ory / g,
+    to: t.to, tk: t.tk, diff: t.tk - t.to, sack: t.sack, sk: t.sk, fd: t.fd / g, tdp: t.tdp, tdr: t.tdr,
+    fgp: t.fga ? t.fgm / t.fga * 100 : 0, cmp: t.pa2 ? t.pc / t.pa2 * 100 : 0,
+  };
+  for (const k in v) v[k] = Math.round(v[k] * 10) / 10;
+  v.g = t.g; v.pf = t.pf; v.pa = t.pa;
+  return { v, players };
+}
+// League ranks (1 = best) for every team stat.
+function teamStatRanks(L) {
+  const all = L.teams.map(t => teamSeasonStats(L, t.id).v);
+  const ranks = L.teams.map(() => ({}));
+  for (const [k, , dir] of TEAM_STAT_DEFS) {
+    const order = all.map((v, i) => i).sort((a, b) => (all[b][k] - all[a][k]) * dir);
+    order.forEach((ti, r) => ranks[ti][k] = r + 1);
+  }
+  return { all, ranks };
+}
+
 // ---------------- Migration for older saves ----------------
 function migrateDev(L) {
   trainState(L);
