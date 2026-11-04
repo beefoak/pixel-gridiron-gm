@@ -141,6 +141,8 @@ function onDevChange(k, el) {
     T.slots[i] = pid !== null ? { pid, attr: 'bal' } : null;
     persist(); render(); return true;
   }
+  if (k === 'negPlan') { G.negPlan = G.negPlan || {}; G.negPlan[+el.dataset.id] = el.value; persist(); return true; }
+  if (k === 'negStrat') { G.negStrat = el.value; persist(); return true; }
   if (k === 'trainA') { const i = +el.dataset.i; if (T.slots[i]) T.slots[i].attr = el.value; persist(); render(); return true; }
   return false;
 }

@@ -216,7 +216,7 @@ function rosterTable(tid, mine) {
   ps.sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : 0) * d; });
   const th = (key, label) => `<th class="sort ${k === key ? 'on' : ''}" data-act="rsort" data-k="${key}">${label}</th>`;
   const act = activeRoster(G, t).length;
-  let h = `<div class="bar-row"><div class="px small">${esc(t.city)} ${esc(t.name)} · ACTIVE ${act}/${ROSTER_LIMIT} · IR ${t.roster.length - act}</div>${mine ? `<button class="btn tiny alt" data-act="autoCut">AUTO-CUT TO 53</button><button class="btn tiny alt" data-act="autoFill">AUTO-FILL ROSTER</button>` : ''}</div>`;
+  let h = `<div class="bar-row"><div class="px small">${esc(t.city)} ${esc(t.name)} · ACTIVE ${act}/${ROSTER_LIMIT} · IR ${t.roster.length - act}</div>${mine ? `<button class="btn tiny alt" data-act="staffCuts">STAFF CUT REVIEW</button><button class="btn tiny alt" data-act="autoCut">AUTO-CUT TO 53</button><button class="btn tiny alt" data-act="autoFill">AUTO-FILL ROSTER</button>` : ''}</div>`;
   h += posFilter(UI.rPos, 'rpos');
   h += `<div class="scroll"><table class="tbl roster"><tr>${th('num', '#')}${th('name', 'NAME')}${th('pos', 'POS')}${th('age', 'AGE')}${th('ovr', 'OVR')}${th('pot', 'POT')}${th('exp', 'EXP')}<th>HT/WT</th><th>CONTRACT</th><th>STATUS</th><th>${isOffseason() ? 'LAST SEASON' : 'SEASON'}</th>${mine ? '<th></th>' : ''}</tr>`;
   for (const p of ps) {

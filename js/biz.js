@@ -39,6 +39,8 @@ function askingContract(L, p, ctx) {
   const mv = marketSalary(L, p);
   let f = 1 + p.greed;
   let yrs = prefYears(p);
+  if (isDeclining(p)) yrs = Math.min(yrs, 2);
+  if (ctx === 'rst') { f -= clamp(0.05 + 0.05 * (p.contract.exp - L.year), 0.05, 0.22); yrs = Math.max(yrs, rstMinYears(L, p)); } // more cheap years left = bigger discount for the early raise
   if (ctx === 'fa') {
     if (L.phase === 'freeagency') f += clamp((p.ovr - 65) / 30, 0, 1) * 0.12; // bidding war for good players
     else { f -= 0.1; if (L.phase === 'regular') yrs = 1; }
@@ -55,12 +57,12 @@ function offerContract(L, p, sal, yrs, ctx) {
   const key = L.year + ctx + L.phase;
   if (p.negBlock === key) return { ok: false, closed: true, msg: `${fullName(p)} has broken off talks.` };
   const a = askingContract(L, p, ctx);
-  const score = sal / a.sal - Math.abs(yrs - a.yrs) * 0.035;
-  if (score >= 0.985) return { ok: true, ask: a };
+  const score = offerScore(L, p, sal, yrs, ctx, a), chance = acceptChance(score);
+  if (chance >= 1 || R.chance(chance)) return { ok: true, ask: a };
   p.negTries = (p.negTries || 0) + 1;
-  if (score < 0.8) p.greed = Math.round((p.greed + 0.03) * 100) / 100;
+  if (score < 0.75) p.greed = Math.round((p.greed + 0.03) * 100) / 100;
   if (p.negTries >= 4) { p.negBlock = key; return { ok: false, closed: true, msg: `Talks broke down. ${fullName(p)} won't negotiate again ${ctx === 'fa' ? 'right now' : 'until next year'}.`, ask: a }; }
-  const tone = score < 0.8 ? 'That offer is insulting.' : score < 0.93 ? "We're still far apart." : "We're close. Sweeten it a little.";
+  const tone = score < 0.8 ? 'That offer is insulting.' : chance < 0.25 ? "We're still far apart." : "We're close. Sweeten it a little.";
   return { ok: false, msg: `"${tone}" (asking ${fmtM(a.sal)}/yr for ${a.yrs} yr${a.yrs > 1 ? 's' : ''}) - ${4 - p.negTries} offer(s) left before talks end.`, ask: a };
 }
 // Commit a contract. Returns an error string or null.
@@ -69,6 +71,12 @@ function signContract(L, team, p, sal, yrs, ctx, silent) {
   if (ctx === 'ext') {
     if (!underContract(L, p)) return 'No current contract to extend.';
     p.contract.next = { sal, exp: p.contract.exp + yrs };
+  } else if (ctx === 'rst') {
+    if (!underContract(L, p)) return 'No current contract to restructure.';
+    if (capSpace(L, team) + p.contract.sal < sal) return `Not enough cap space (${fmtM(capSpace(L, team) + p.contract.sal)} available including the current deal).`;
+    if (L.year + yrs - 1 <= p.contract.exp) return `A restructure has to run past ${p.contract.exp}.`;
+    p.contract = { sal, exp: L.year + yrs - 1, signed: L.year };
+    p.rstYear = L.year;
   } else {
     if (ctx === 'fa' && team.id === L.userTeam && L.phase !== 'freeagency' && L.phase !== 'resign' && L.phase !== 'draft' && activeRoster(L, team).length >= ROSTER_LIMIT) return 'Roster is full.';
     if (capSpace(L, team) < sal) return `Not enough cap space (${fmtM(capSpace(L, team))} available).`;
@@ -77,11 +85,103 @@ function signContract(L, team, p, sal, yrs, ctx, silent) {
   }
   p.negTries = 0;
   if (!silent) {
-    const verb = ctx === 'fa' ? 'signs with' : ctx === 'ext' ? 'agrees to an extension with' : 're-signs with';
+    const verb = ctx === 'fa' ? 'signs with' : ctx === 'ext' ? 'agrees to an extension with' : ctx === 'rst' ? 'restructures his deal with' : 're-signs with';
     news(L, `${p.pos} ${fullName(p)} ${verb} ${team.abbr}: ${yrs} yr / ${fmtM(sal * yrs)} (${fmtM(sal)} per year).`, team.id);
     if (sal >= L.cap * 0.07 || team.id === L.userTeam && p.ovr >= 78) story(L, 'SIGNING', `${team.abbr} ${ctx === 'ext' ? 'extend' : ctx === 'fa' ? 'land' : 'keep'} ${fullName(p)}`, `${p.pos} ${fullName(p)} (${p.ovr} OVR, age ${p.age}) ${verb} the ${team.name} for ${yrs} year${yrs > 1 ? 's' : ''} and ${fmtM(sal * yrs)}${sal >= L.cap * 0.15 ? ' - one of the richest deals in the league' : ''}.`, [team.id], p.id);
   }
   return null;
+}
+// ---------- Negotiation model ----------
+// Past their peak, or slipping: these players want security less than one more chance to prove it.
+function isDeclining(p) {
+  const pk = PEAK[p.pos][1] + (p.gen ? GEN_PEAK_BONUS : 0);
+  const last = p.ovrHist && p.ovrHist.length ? p.ovrHist[p.ovrHist.length - 1].o : p.ovr;
+  return p.age > pk || p.ovr < last - 1;
+}
+function isRising(p) { return p.age <= 26 && p.pot >= p.ovr + 3; }
+// Salary penalty (fraction of asking) for offering a length other than what the player wants.
+function lengthAdj(p, yrs, a) {
+  const d = yrs - a.yrs, dec = isDeclining(p);
+  let pen = 0;
+  if (d < 0) pen = -d * (dec ? 0.005 : 0.03);
+  else if (d > 0) pen = d * (dec ? -0.015 : isRising(p) ? 0.025 : 0.012);
+  if (dec && yrs === 1) pen -= 0.025; // "prove-it" deal
+  return pen;
+}
+function offerScore(L, p, sal, yrs, ctx, a) { a = a || askingContract(L, p, ctx); return sal / a.sal - lengthAdj(p, yrs, a); }
+// 0.93 of asking (length-adjusted) is a long shot; 0.99 always gets it done.
+function acceptChance(score) { return clamp((score - 0.93) / 0.06, 0, 1); }
+function rstMinYears(L, p) { return p.contract ? p.contract.exp - L.year + 2 : 1; }
+function canRestructure(L, p) {
+  if (!underContract(L, p) || p.contract.next || p.contract.exp <= L.year || p.rstYear === L.year) return false;
+  if (rstMinYears(L, p) > 5) return false;
+  const mv = marketSalary(L, p);
+  return p.contract.sal < mv * 0.85 && mv - p.contract.sal >= 1.5;
+}
+const NEG_PRESETS = [['budget', 'BUDGET', 0.952], ['team', 'TEAM FRIENDLY', 0.975], ['player', 'PLAYER FRIENDLY', 0.995]];
+// Ready-made offers. Budget = cheapest plausible, team friendly = length that favors the team, player friendly = near-certain yes.
+function contractPresets(L, p, ctx) {
+  const a = askingContract(L, p, ctx), dec = isDeclining(p);
+  const minY = ctx === 'rst' ? rstMinYears(L, p) : 1, yc = (y) => clamp(y, minY, 5);
+  const years = { budget: yc(dec ? 1 : a.yrs), team: yc(dec ? 1 : isRising(p) ? 5 : Math.min(5, a.yrs + 1)), player: yc(a.yrs) };
+  return NEG_PRESETS.map(([k, label, target]) => {
+    const yrs = years[k];
+    const sal = Math.max(minSalary(L), Math.ceil(a.sal * (target + lengthAdj(p, yrs, a)) * 20) / 20);
+    return { k, label, sal, yrs, chance: acceptChance(offerScore(L, p, sal, yrs, ctx, a)) };
+  });
+}
+// Expiring (resign) or final-year (ext) deals on a team.
+function negotiationList(L, team, ctx) {
+  return team.roster.map(id => L.players[id]).filter(p => p.contract && !p.contract.next && (ctx === 'resign' ? p.contract.exp < L.year : p.contract.exp === L.year));
+}
+function staffWantsKeep(L, p, ctx) {
+  const a = askingContract(L, p, ctx);
+  const useful = isStarterOn(L, p) || (p.age <= 27 && p.ovr >= 66) || p.ovr >= 74 || (p.age <= 24 && p.pot >= 75);
+  if (p.age > 33 && p.ovr < 80) return { keep: false, why: 'too old' };
+  if (!useful) return { keep: false, why: 'not needed' };
+  if (a.sal > marketSalary(L, p) * 1.2 && a.sal > minSalary(L) * 2) return { keep: false, why: 'asking too much' };
+  return { keep: true, why: isStarterOn(L, p) ? 'starter' : 'core depth' };
+}
+// Staff negotiates for every player whose plan is AUTO or RE-SIGN. plan: {pid: 'auto'|'keep'|'let'}.
+function simNegotiations(L, ctx, plan, strategy) {
+  const u = L.teams[L.userTeam];
+  const list = negotiationList(L, u, ctx).sort((a, b) => playerValue(b) - playerValue(a));
+  let room = ctx === 'ext' ? L.cap * 1.03 - commitments(L, u, L.year + 1) : capSpace(L, u) - reserveForRookies(L, u) - 2;
+  const out = [];
+  const start = Math.max(0, NEG_PRESETS.findIndex(x => x[0] === strategy));
+  for (const p of list) {
+    const d = (plan && plan[p.id]) || 'auto';
+    if (d === 'let') { out.push({ p, res: 'let', why: 'your call' }); continue; }
+    if (d === 'auto') { const w = staffWantsKeep(L, p, ctx); if (!w.keep) { out.push({ p, res: 'let', why: w.why }); continue; } }
+    let done = null;
+    for (let i = start; i < NEG_PRESETS.length + 1 && !done; i++) {
+      const pr = contractPresets(L, p, ctx);
+      const o = i < NEG_PRESETS.length ? pr[i] : { ...pr[2], sal: round05(pr[2].sal * 1.03) };
+      if (o.sal > room) { done = { p, res: 'cap', why: `needs ${fmtM(o.sal)}, ${fmtM(Math.max(0, room))} left` }; break; }
+      const r = offerContract(L, p, o.sal, o.yrs, ctx);
+      if (r.ok) { const err = signContract(L, u, p, o.sal, o.yrs, ctx, false); done = err ? { p, res: 'fail', why: err } : { p, res: 'signed', sal: o.sal, yrs: o.yrs, tries: i - start + 1 }; if (!err) room -= o.sal; }
+      else if (r.closed) done = { p, res: 'walked', why: 'talks broke down' };
+    }
+    out.push(done || { p, res: 'walked', why: 'no deal' });
+  }
+  return out;
+}
+// Players the staff would release: surplus depth and overpaid backups.
+function staffCutCandidates(L, team) {
+  const out = [], ps = team.roster.map(id => L.players[id]).filter(p => !p.contract || underContract(L, p));
+  for (const pos of POSITIONS) {
+    const arr = ps.filter(p => p.pos === pos).sort((a, b) => playerValue(b) - playerValue(a));
+    arr.slice(ROSTER_TEMPLATE[pos]).forEach((p, i) => {
+      if (p.age <= 24 && p.pot >= 72) return;
+      out.push({ p, why: `surplus ${pos} (#${ROSTER_TEMPLATE[pos] + i + 1} of ${arr.length}, template ${ROSTER_TEMPLATE[pos]})` });
+    });
+  }
+  for (const p of ps) {
+    if (out.some(x => x.p === p) || !underContract(L, p) || isStarterOn(L, p)) continue;
+    if (p.age >= 29 && p.contract.sal >= marketSalary(L, p) * 1.8 && p.contract.sal * 0.5 >= 2) out.push({ p, why: `overpaid backup (${fmtM(p.contract.sal)} vs ${fmtM(marketSalary(L, p))} market)` });
+  }
+  for (const x of out) x.save = underContract(L, x.p) ? round05(x.p.contract.sal * 0.5) : 0;
+  return out.sort((a, b) => playerValue(a.p) - playerValue(b.p));
 }
 function releaseDeadMoney(L, team, p) {
   if (!underContract(L, p)) { p.contract = null; return; }

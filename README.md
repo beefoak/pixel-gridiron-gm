@@ -14,6 +14,7 @@ Take over one of 32 franchises and run it season after season:
 - **Free agency review** - see what you signed, who left and how your team rating moved, with a grade.
 - **Trades** - deal players and picks; AI teams value them by talent, age, need, contract and projected draft slot.
 - **Salary cap** - a $220M cap that rises each year, contract negotiation, re-signing, free agency waves and dead money.
+- **Negotiation tools** - one-click Budget / Team friendly / Player friendly offers with live acceptance odds, staff-simulated negotiations for the players you don't want to handle, a staff cut review, and early restructures for players on bargain deals. Declining veterans are open to 1-year prove-it deals.
 - **Pro-style season** - 17-game schedules built from the previous year's standings, 7-team conference playoffs and the Megacup.
 - **League history** - generated career stats for veterans, a record book, awards, a Hall of Fame and a News feed of storylines.
 
