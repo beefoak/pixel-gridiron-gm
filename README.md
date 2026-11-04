@@ -6,7 +6,10 @@ Take over one of 32 franchises and run it season after season:
 
 - **Simulated football** - every play is simulated, producing full box scores, league leaders and watchable pixel-field replays of your games.
 - **Player careers** - ratings grow toward potential, peak, then decline with age. Injuries and illness sideline players, and serious injuries can sap athleticism for good.
-- **Draft & scouting** - a new draft class every year. Scouts report in during the season and at the Combine; spend scouting points to see through the fog.
+- **Draft & scouting** - a new draft class every year. Scouts report in during the season and at the Combine; spend scouting points to see through the fog. Each prospect has a college report of 3-5 traits tied to their real ratings, and every pick is graded on where it went vs. where the player truly ranked, with a full draft review at the end.
+- **Depth chart & training** - set your own depth chart any time, and pick players for weekly focus training (empty slots are auto-assigned).
+- **Player editor** - edit any player's ratings and bio.
+- **Free agency review** - see what you signed, who left and how your team rating moved, with a grade.
 - **Trades** - deal players and picks; AI teams value them by talent, age, need, contract and projected draft slot.
 - **Salary cap** - a $220M cap that rises each year, contract negotiation, re-signing, free agency waves and dead money.
 - **Pro-style season** - 17-game schedules built from the previous year's standings, 7-team conference playoffs and the Megacup.

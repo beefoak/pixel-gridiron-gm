@@ -12,9 +12,7 @@ function makeTemp(pos) {
 
 function buildLineup(L, team) {
   const avail = team.roster.map(id => L.players[id]).filter(p => p && !p.injury);
-  const by = {}; for (const ps of POSITIONS) by[ps] = [];
-  for (const p of avail) by[p.pos].push(p);
-  for (const ps of POSITIONS) by[ps].sort((a, b) => b.ovr - a.ovr);
+  const by = {}; for (const ps of POSITIONS) by[ps] = depthOrder(L, team, ps, p => !p.injury);
   const used = new Set();
   const take = (pos, n, fall) => {
     const out = []; const lists = fall ? [pos, ...FALLBACK[pos]] : [pos];

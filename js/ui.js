@@ -14,7 +14,7 @@ function ovrCls(v) { return v >= 90 ? 'o-elite' : v >= 80 ? 'o-great' : v >= 70 
 function ovrB(v) { return `<span class="ovr ${ovrCls(v)}">${v}</span>`; }
 function potB(v) { return `<span class="pot">${potGrade(v)}</span>`; }
 function statusTag(p) { if (!p.injury) return '<span class="ok">OK</span>'; return `<span class="${p.injury.ill ? 'ill' : 'inj'}">${p.ir ? 'IR ' : ''}${esc(p.injury.name)} ${p.injury.weeks}w</span>`; }
-function passerRating(s) { const a = s.pAtt; if (!a) return 0; const c = clamp((s.pCmp / a - 0.3) * 5, 0, 2.375), y = clamp((s.pYds / a - 3) * 0.25, 0, 2.375), t = clamp(s.pTd / a * 20, 0, 2.375), i = clamp(2.375 - s.pInt / a * 25, 0, 2.375); return (c + y + t + i) / 6 * 100; }
+function passerRating(s) { const a = st(s, "pAtt"); if (!a) return 0; const c = clamp((st(s, "pCmp") / a - 0.3) * 5, 0, 2.375), y = clamp((st(s, "pYds") / a - 3) * 0.25, 0, 2.375), t = clamp(st(s, "pTd") / a * 20, 0, 2.375), i = clamp(2.375 - st(s, "pInt") / a * 25, 0, 2.375); return (c + y + t + i) / 6 * 100; }
 const f1 = (n, d) => d ? (n / d).toFixed(1) : '0.0';
 const COLS = {
   pass: [['CMP', 'pCmp'], ['ATT', 'pAtt'], ['PCT', s => f1(st(s, 'pCmp') * 100, st(s, 'pAtt'))], ['YDS', 'pYds'], ['TD', 'pTd'], ['INT', 'pInt'], ['RTG', s => passerRating(s).toFixed(1)], ['SK', 'sk']],
@@ -87,7 +87,7 @@ function phaseLabel() {
     case 'draft': return `${G.year} · DRAFT`;
     case 'preseason': return `${G.year} · PRESEASON`;
     case 'resign': return `${G.year} · RE-SIGNING`;
-    case 'freeagency': return `${G.year} · FREE AGENCY ${G.faWave}/${FA_WAVES}`;
+    case 'freeagency': return `${G.year} · FREE AGENCY ${Math.min(G.faWave, FA_WAVES)}/${FA_WAVES}`;
   }
   return '';
 }
@@ -98,10 +98,10 @@ function phaseButtons() {
     case 'awards': return `<button class="btn alt" data-act="tab" data-tab="awards">AWARDS</button><button class="btn" data-act="startPlayoffs">&gt; START PLAYOFFS</button>`;
     case 'playoffs': return `<button class="btn" data-act="playRound">&gt; PLAY ${ROUND_NAMES[G.playoffs.round].toUpperCase()}</button><button class="btn alt" data-act="simPlayoffs">»» SIM PLAYOFFS</button>`;
     case 'postseason': return `<button class="btn" data-act="offseason">&gt; BEGIN OFFSEASON</button>`;
-    case 'draft': return `<button class="btn alt" data-act="tab" data-tab="draft">DRAFT BOARD</button><button class="btn" data-act="finishDraft">»» AUTO-FINISH DRAFT</button>`;
+    case 'draft': return `${reviewButtons()}<button class="btn alt" data-act="tab" data-tab="draft">DRAFT BOARD</button><button class="btn" data-act="finishDraft">»» AUTO-FINISH DRAFT</button>`;
     case 'resign': return `<button class="btn alt" data-act="tab" data-tab="contracts">EXPIRING DEALS</button><button class="btn" data-act="startFA">BEGIN FREE AGENCY &gt;</button>`;
-    case 'freeagency': return `<button class="btn alt" data-act="tab" data-tab="fa">FREE AGENTS</button><button class="btn alt" data-act="faWave">SIM FA WAVE ${G.faWave + 1}/${FA_WAVES}</button><button class="btn" data-act="finishFA">FINISH FREE AGENCY &gt;</button>`;
-    case 'preseason': return `<button class="btn alt" data-act="autoCut">AUTO-CUT TO 53</button><button class="btn" data-act="startSeason">&gt; START ${G.year} SEASON</button>`;
+    case 'freeagency': return `<button class="btn alt" data-act="tab" data-tab="fa">FREE AGENTS</button>${G.faWave < FA_WAVES ? `<button class="btn alt" data-act="faWave">SIM FA WAVE ${G.faWave + 1}/${FA_WAVES}</button>` : '<span class="dim small">ALL WAVES DONE</span>'}<button class="btn" data-act="finishFA">FINISH FREE AGENCY &gt;</button>`;
+    case 'preseason': return `${reviewButtons()}<button class="btn alt" data-act="autoCut">AUTO-CUT TO 53</button><button class="btn" data-act="startSeason">&gt; START ${G.year} SEASON</button>`;
   }
   return '';
 }
@@ -117,11 +117,11 @@ function renderHeader() {
   </header>`;
 }
 function renderNav() {
-  const tabs = [['home', 'HOME'], ['roster', 'ROSTER'], ['depth', 'DEPTH'], ['schedule', 'SCHEDULE'], ['standings', 'STANDINGS'], ['playoffs', 'PLAYOFFS'], ['leaders', 'LEADERS'], ['injuries', 'INJURIES'], ['news', 'NEWS'], ['fa', 'FREE AGENTS'], ['trade', 'TRADE'], ['contracts', 'CONTRACTS'], ['scouting', 'SCOUTING'], ['draft', 'DRAFT'], ['awards', 'AWARDS'], ['history', 'HISTORY'], ['records', 'RECORDS']];
+  const tabs = [['home', 'HOME'], ['roster', 'ROSTER'], ['depth', 'DEPTH'], ['training', 'TRAINING'], ['schedule', 'SCHEDULE'], ['standings', 'STANDINGS'], ['playoffs', 'PLAYOFFS'], ['leaders', 'LEADERS'], ['injuries', 'INJURIES'], ['news', 'NEWS'], ['fa', 'FREE AGENTS'], ['trade', 'TRADE'], ['contracts', 'CONTRACTS'], ['scouting', 'SCOUTING'], ['draft', 'DRAFT'], ['awards', 'AWARDS'], ['history', 'HISTORY'], ['records', 'RECORDS']];
   return `<nav class="tabs">${tabs.filter(([k]) => k !== 'playoffs' || G.playoffs).filter(([k]) => k !== 'draft' || G.draft || G.draftHistory[G.year]).map(([k, n]) => `<button class="tab px ${UI.tab === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${n}</button>`).join('')}</nav>`;
 }
 function renderTab() {
-  const f = { home: vHome, roster: vRoster, depth: vDepth, schedule: vSchedule, standings: vStandings, playoffs: vPlayoffs, leaders: vLeaders, injuries: vInjuries, fa: vFA, trade: vTrade, news: vNews, contracts: vContracts, records: vRecords, scouting: vScouting, draft: vDraft, awards: vAwards, history: vHistory }[UI.tab] || vHome;
+  const f = { home: vHome, roster: vRoster, depth: vDepth, training: vTraining, schedule: vSchedule, standings: vStandings, playoffs: vPlayoffs, leaders: vLeaders, injuries: vInjuries, fa: vFA, trade: vTrade, news: vNews, contracts: vContracts, records: vRecords, scouting: vScouting, draft: vDraft, awards: vAwards, history: vHistory }[UI.tab] || vHome;
   return f();
 }
 const panel = (title, body, cls) => `<section class="panel ${cls || ''}">${title ? `<h3 class="px">${title}</h3>` : ''}${body}</section>`;
@@ -227,18 +227,7 @@ function rosterTable(tid, mine) {
   return h + `</table></div>`;
 }
 
-// ---------- Depth chart ----------
-function vDepth() {
-  const lu = buildLineup(G, TM(G.userTeam));
-  let h = `<p class="dim">Depth is set automatically by overall rating each week; injured players are skipped and fill-ins are pulled from similar positions.</p><div class="depth">`;
-  for (const ps of POSITIONS) {
-    const all = TM(G.userTeam).roster.map(id => G.players[id]).filter(p => p.pos === ps).sort((a, b) => b.ovr - a.ovr);
-    const start = lu[ps].slice(0, STARTERS[ps]);
-    h += panel(ps, `<ol>${start.map(p => `<li class="starter">${p.temp ? '<span class="bad">NO HEALTHY PLAYER</span>' : `${ovrB(p.ovr)} ${pLink(p, true)}${p.pos !== ps ? ` <span class="ill">(${p.pos})</span>` : ''}`}</li>`).join('')}
-      ${all.filter(p => !start.includes(p)).map(p => `<li class="${p.injury ? 'out' : ''}">${ovrB(p.ovr)} ${pLink(p, true)} ${p.injury ? statusTag(p) : ''}</li>`).join('')}</ol>`, 'dpanel');
-  }
-  return h + '</div>';
-}
+// Depth chart view lives in ui_dev.js
 
 // ---------- Schedule ----------
 function vSchedule() {
@@ -368,7 +357,7 @@ function vDraft() {
   const done = draftDone(G);
   const pick = done ? null : D.picks[D.cur];
   const myTurn = pick && pick.tid === G.userTeam;
-  let h = `<div class="draft-banner ${myTurn ? 'mine' : ''}">${pick ? `<div class="px">ROUND ${pick.rd} · PICK ${pick.pk} (#${pick.ovr})</div><div>${helm(pick.tid, 40)} <b class="px">${esc(TM(pick.tid).city)} ${esc(TM(pick.tid).name)}</b> ${myTurn ? '<span class="blink px">YOU ARE ON THE CLOCK</span>' : 'on the clock'}</div>` : '<div class="px">DRAFT COMPLETE</div>'}
+  let h = `<div class="draft-banner ${myTurn ? 'mine' : ''}">${pick ? `<div class="px">ROUND ${pick.rd} · PICK ${pick.pk} (#${pick.ovr})</div><div>${helm(pick.tid, 40)} <b class="px">${esc(TM(pick.tid).city)} ${esc(TM(pick.tid).name)}</b> ${myTurn ? '<span class="blink px">YOU ARE ON THE CLOCK</span>' : 'on the clock'}</div>` : `<div class="px">DRAFT COMPLETE</div><button class="btn alt" data-act="draftReview" data-v="${D.year}">VIEW DRAFT REVIEW</button>`}
    <div class="actions">${G.scoutStop ? `<span class="dim">The ${esc(G.scoutStop.name)} is underway - finish scouting to open the draft.</span><button class="btn" data-act="tab" data-tab="scouting">GO TO SCOUTING</button>` : ''}${G.scoutStop ? '' : !myTurn && !done ? `<button class="btn" data-act="draftToMe">» SIM TO MY PICK</button><button class="btn alt" data-act="draftOne">NEXT PICK</button>` : ''}${myTurn && !G.scoutStop ? `<button class="btn alt" data-act="draftAuto">AUTO-PICK FOR ME</button>` : ''}${G.scoutStop ? '' : `<button class="btn alt" data-act="finishDraft">»» FINISH DRAFT</button>`}</div></div>`;
   const me = TM(G.userTeam);
   const needs = teamNeeds(G, me);
@@ -384,18 +373,19 @@ function vDraft() {
     h += panel(`RECOMMENDED PICKS${nextMine && !myTurn ? ` <span class="dim small">(if picking now - your next pick is #${nextMine.ovr})</span>` : ''}`, `<table class="tbl recs">${recs.map((r, i) => `<tr><td class="px small gold">${i + 1}</td><td>${pLink(r.p)}<div class="dim small">${esc(r.why.join(' · '))}</div></td><td>${r.p.pos} ${lvl(needs[r.p.pos].level)}</td><td>${ovrB(r.p.sOvr)} ${potB(r.p.sPot)}</td><td class="dim small">RK ${r.rank}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${r.p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table>`, 'recpanel');
   }
   h += `<div class="filters">${['ALL', 'NEEDS', ...POSITIONS].map(x => `<button class="chip ${UI.dPos === x ? 'on' : ''}" data-act="dpos" data-v="${x}">${x === 'NEEDS' ? '★ MY NEEDS' : x}</button>`).join('')}</div>`;
-  h += panel('BIG BOARD (SCOUTED)', `<div class="scroll tall"><table class="tbl"><tr><th>RK</th><th>NAME</th><th>POS</th><th>FIT</th><th>AGE</th><th>COLLEGE</th><th>PROJ</th><th>POT</th><th>HT/WT</th><th>SPD</th><th></th></tr>${ps.slice(0, 160).map(p => `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${D.pool.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${ovrB(p.sOvr)}</td><td>${potB(p.sPot)}</td><td class="dim">${htStr(p.ht)} ${p.wt}</td><td>${p.attrs.spd}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table></div>`);
+  h += panel('BIG BOARD (SCOUTED)', `<div class="scroll tall"><table class="tbl"><tr><th>RK</th><th>NAME</th><th>POS</th><th>FIT</th><th>AGE</th><th>COLLEGE</th><th>PROJ</th><th>POT</th><th>HT/WT</th><th>SPD</th><th></th></tr>${ps.slice(0, 160).map(p => `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${D.pool.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}${p.traits ? `<div class="traits-sm">${visibleTraits(p).map(t => `<span class="${t[3] > 0 ? 'tp' : 'tn'}">${t[3] > 0 ? '+' : '-'}${esc(t[0])}</span>`).join(' · ')}</div>` : ''}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${ovrB(p.sOvr)}</td><td>${potB(p.sPot)}</td><td class="dim">${htStr(p.ht)} ${p.wt}</td><td>${p.attrs.spd}</td><td>${myTurn && !G.scoutStop ? `<button class="btn tiny" data-act="draftPick" data-id="${p.id}">DRAFT</button>` : ''}</td></tr>`).join('')}</table></div>`);
   h += `</div><div>`;
   const nlist = POSITIONS.map(ps2 => needs[ps2]).sort((a, b) => b.need - a.need);
   h += panel('TEAM NEEDS', `<table class="tbl needs">${nlist.map(n => `<tr><td><b>${n.pos}</b></td><td>${lvl(n.level)}</td><td class="nbar"><div class="bar"><i class="n-${n.level.toLowerCase()}" style="width:${n.need * 10}%"></i></div></td><td class="dim small">${n.stAvg} / ${n.lg}</td></tr>${n.reasons.length && n.level !== 'LOW' ? `<tr class="why"><td></td><td colspan="3" class="dim small">${esc(n.reasons.join('; '))}</td></tr>` : ''}`).join('')}</table><p class="dim small">Starter avg OVR / league avg. Need factors in starter quality, depth, aging starters, long injuries and young successors already on the roster.</p>`);
   const made = D.picks.slice(0, D.cur).reverse().slice(0, 24);
-  h += panel('MY PICKS', `<table class="tbl">${D.picks.filter(p => p.tid === G.userTeam).map(p => `<tr><td class="dim">R${p.rd} #${p.ovr}${p.orig !== undefined && p.orig !== p.tid ? ' <span class="small">via ' + TM(p.orig).abbr + '</span>' : ''}</td><td>${p.pid ? `${p.pos} ${pLink(G.players[p.pid] || { id: p.pid, fn: p.name, ln: '' })}` : '<span class="dim">-</span>'}</td></tr>`).join('')}</table>`);
-  h += panel('RECENT PICKS', `<table class="tbl">${made.map(p => `<tr><td class="dim">#${p.ovr}</td><td>${helm(p.tid, 16)}</td><td>${p.pos}</td><td>${G.players[p.pid] ? pLink(G.players[p.pid], true) : esc(p.name)}</td></tr>`).join('') || '<tr><td class="dim">No picks yet.</td></tr>'}</table>`);
+  h += panel('MY PICKS', `<table class="tbl">${D.picks.filter(p => p.tid === G.userTeam).map(p => `<tr><td class="dim">R${p.rd} #${p.ovr}${p.orig !== undefined && p.orig !== p.tid ? ' <span class="small">via ' + TM(p.orig).abbr + '</span>' : ''}</td><td>${p.pid ? `${p.pos} ${pLink(G.players[p.pid] || { id: p.pid, fn: p.name, ln: '' })}` : '<span class="dim">-</span>'}</td><td>${p.pid ? `${pickGrade(p)} <span class="dim small">${p.tr ? 'true #' + p.tr : ''}</span>` : ''}</td></tr>`).join('')}</table>${D.picks.some(p => p.tid === G.userTeam && p.pid) ? '<p class="dim small">Grade = slot you picked vs. where the player truly ranks in the class.</p>' : ''}`);
+  h += panel('RECENT PICKS', `<table class="tbl">${made.map(p => `<tr><td class="dim">#${p.ovr}</td><td>${helm(p.tid, 16)}</td><td>${p.pos}</td><td>${G.players[p.pid] ? pLink(G.players[p.pid], true) : esc(p.name)}</td><td>${pickGrade(p)}</td></tr>`).join('') || '<tr><td class="dim">No picks yet.</td></tr>'}</table>`);
   return h + `</div></div>`;
 }
 function draftResultsTable(hist) {
   if (!hist.length) return '<p class="dim">No draft results.</p>';
-  return `<div class="scroll tall"><table class="tbl"><tr><th>PICK</th><th>TEAM</th><th>POS</th><th>PLAYER</th></tr>${hist.map(p => `<tr class="${p.tid === G.userTeam ? 'me-row' : ''}"><td class="dim">R${p.rd} #${p.ovr}</td><td>${teamLink(p.tid)}</td><td>${p.pos}</td><td>${G.players[p.pid] ? pLink(G.players[p.pid]) : esc(p.name)}</td></tr>`).join('')}</table></div>`;
+  const yr = Object.keys(G.draftHistory).find(y => G.draftHistory[y] === hist);
+  return `${yr ? `<button class="btn alt" data-act="draftReview" data-v="${yr}">VIEW DRAFT REVIEW &amp; GRADES</button>` : ''}<div class="scroll tall"><table class="tbl"><tr><th>PICK</th><th>TEAM</th><th>POS</th><th>PLAYER</th><th>TRUE</th><th>GRADE</th></tr>${hist.map(p => `<tr class="${p.tid === G.userTeam ? 'me-row' : ''}"><td class="dim">R${p.rd} #${p.ovr}</td><td>${teamLink(p.tid)}</td><td>${p.pos}</td><td>${G.players[p.pid] ? pLink(G.players[p.pid]) : esc(p.name)}</td><td class="dim">${p.tr ? '#' + p.tr : '-'}</td><td>${pickGrade(p)}</td></tr>`).join('')}</table></div>`;
 }
 
 // ---------- Awards ----------
@@ -467,8 +457,12 @@ function playerModal(pid) {
       <div class="dim">Age ${p.age} · ${htStr(p.ht)} ${p.wt} lbs · ${esc(p.college)} · Exp ${p.exp} yr · Drafted: ${dr}</div>${p.contract && !prospect ? `<div>Contract: <b>${esc(contractStr(G, p))}</b> · market ${fmtM(marketSalary(G, p))}</div>` : p.tid === -1 ? `<div>Free agent · asking ${fmtM(askingContract(G, p, 'fa').sal)}/yr</div>` : ''}
       <div class="ratings"><div>OVR ${prospect ? ovrB(p.sOvr) + ` <span class="dim small">${SCOUT_SPREAD[p.sc || 0] ? '±' + Math.ceil(SCOUT_SPREAD[p.sc || 0]) : 'exact'} · ${SCOUT_LABELS[p.sc || 0]}</span>` : ovrB(p.ovr)}</div><div>POTENTIAL ${prospect && !p.sc ? '<span class="pot">?</span>' : potB(prospect ? p.sPot : p.pot)}</div><div>${statusTag(p)}</div></div>
       ${p.awards.length ? `<div class="gold small">★ ${esc(summarizeAwards(p.awards))}</div>` : ''}
-      <div class="pact">${p.tid === G.userTeam && !G.draft ? `<button class="btn tiny danger" data-act="cut" data-id="${p.id}">RELEASE</button>` : ''}${negButton(p)}</div>
+      <div class="pact">${p.tid === G.userTeam && !G.draft ? `<button class="btn tiny danger" data-act="cut" data-id="${p.id}">RELEASE</button>` : ''}${negButton(p)}<button class="btn tiny alt" data-act="editPlayer" data-id="${p.id}">EDIT PLAYER</button></div>
     </div></div>`;
+  if (p.traits && p.traits.length) {
+    const vis = visibleTraits(p), hidden = p.traits.length - vis.length;
+    h += `<h4 class="px">${prospect ? 'COLLEGE REPORT' : 'SCOUTING NOTES'}</h4><div>${vis.map(traitHtml).join('')}${hidden ? `<span class="dim small">+${hidden} more - scout deeper to uncover</span>` : ''}</div>`;
+  }
   if (!prospect) {
     h += `<div class="grid2"><div><h4 class="px">KEY RATINGS</h4>${keys.map(k => abar(k, true)).join('')}<h4 class="px">OTHER</h4>${others.filter(k => p.attrs[k] > 30 || ['spd', 'str', 'agi', 'awr'].includes(k)).map(k => abar(k)).join('')}</div>`;
     const hist = [...p.ovrHist, { y: G.year, o: p.ovr, cur: true }];
@@ -613,6 +607,7 @@ function onClick(e) {
   if (el.disabled) return;
   const act = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
   if (onBizClick(act, el)) return;
+  if (onDevClick(act, el)) return;
   switch (act) {
     case 'namesEdit': UI.editNames = true; render(); break;
     case 'namesDone': UI.editNames = false; render(); break;
@@ -643,7 +638,7 @@ function onClick(e) {
     case 'draftOne': if (!draftDone(G)) aiDraftPick(G); render(); break;
     case 'draftPick': draftPlayer(G, +id); simDraftToUser(G); persist(); render(); break;
     case 'draftAuto': { const r = recommendProspects(G, TM(G.userTeam), 1)[0]; if (r) draftPlayer(G, r.p.id); else aiDraftPick(G); } simDraftToUser(G); persist(); render(); break;
-    case 'finishDraft': finishDraft(G); persist(); UI.tab = 'roster'; render(); break;
+    case 'finishDraft': { const yr = G.draft.year; finishDraft(G); persist(); UI.tab = 'roster'; render(); draftReviewModal(yr); break; }
     case 'autoCut': { const t = TM(G.userTeam); cutToLimit(G, t, true); persist(); render(); toast(`Roster trimmed to ${activeRoster(G, t).length}.`); break; }
     case 'autoFill': { const t = TM(G.userTeam); aiFillRoster(G, t); persist(); render(); toast(`Roster filled to ${activeRoster(G, t).length}.`); break; }
     case 'startSeason': { const err = startSeason(G); if (err) toast(err); else { persist(); UI.tab = 'home'; UI.schedWeek = null; render(); } break; }
@@ -700,6 +695,7 @@ function onClick(e) {
 }
 function onChange(e) {
   const el = e.target; const k = el.dataset.change; if (!k) return;
+  if (onDevChange(k, el)) return;
   if (k === 'watch') UI.watch = el.checked;
   else if (k === 'autoRoster') { G.autoRoster = el.checked; persist(); }
   else if (k === 'schedWeek') { UI.schedWeek = +el.value; render(); }

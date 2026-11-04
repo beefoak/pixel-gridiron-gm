@@ -73,7 +73,7 @@ function signContract(L, team, p, sal, yrs, ctx, silent) {
     if (ctx === 'fa' && team.id === L.userTeam && L.phase !== 'freeagency' && L.phase !== 'resign' && L.phase !== 'draft' && activeRoster(L, team).length >= ROSTER_LIMIT) return 'Roster is full.';
     if (capSpace(L, team) < sal) return `Not enough cap space (${fmtM(capSpace(L, team))} available).`;
     p.contract = { sal, exp: L.year + yrs - 1, signed: L.year };
-    if (ctx === 'fa') signPlayer(L, team, p, true);
+    if (ctx === 'fa') { signPlayer(L, team, p, true); faLogSigning(L, team, p, sal, yrs); }
   }
   p.negTries = 0;
   if (!silent) {
@@ -131,6 +131,7 @@ function aiResign(L, team) {
   }
 }
 function startFreeAgency(L) {
+  faSnapshot(L);
   for (const t of L.teams) {
     if (t.id === L.userTeam) {
       for (const p of t.roster.map(id => L.players[id])) if (p.contract && p.contract.exp < L.year && !p.contract.next) { news(L, `${p.pos} ${fullName(p)} leaves ${t.abbr} and hits free agency.`, t.id); releasePlayer(L, p, true); }
@@ -142,7 +143,7 @@ function startFreeAgency(L) {
   story(L, 'FREE AGENCY', 'Free agency opens', `The market is open. Top names available: ${top.map(p => `${p.pos} ${fullName(p)} (${p.ovr})`).join(', ')}. Teams have ${FA_WAVES} waves to make their moves.`);
 }
 function simFAWave(L) {
-  if (L.phase !== 'freeagency') return;
+  if (L.phase !== 'freeagency' || L.faWave >= FA_WAVES) return;
   L.faWave++;
   const order = R.shuffle(L.teams.filter(t => t.id !== L.userTeam));
   for (let pass = 0; pass < 2; pass++) for (const t of order) {
@@ -166,6 +167,7 @@ function simFAWave(L) {
 }
 function finishFreeAgency(L) {
   while (L.phase === 'freeagency' && L.faWave < FA_WAVES) simFAWave(L);
+  L.lastFAReview = buildFAReview(L);
   L.phase = 'draft';
   runCombine(L);
 }

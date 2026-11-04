@@ -252,6 +252,7 @@ function simWeek(L) {
   if (L.phase !== 'regular' || L.scoutStop) return;
   for (const g of L.schedule) if (g.week === L.week && !g.played) playGame(L, g, false);
   weeklyHealth(L);
+  weeklyTraining(L);
   L.week++;
   teamSeasonRecords(L);
   weeklyStories(L);
@@ -502,6 +503,7 @@ function generateDraftClass(L, n) {
     const age = R.int(21, 23);
     const p = createPlayer(L, pos, 42 + q * 36 + R.gauss(0, 2), age);
     p.tid = -2; p.exp = 0;
+    assignTraits(p, true);
     p.pot = clamp(Math.round(p.ovr + R.rand(3, 20) + q * 8 + (age === 21 ? 3 : 0)), p.ovr, 99);
     p.sc = 0; p.errO = R.gauss(0, 1); p.errP = R.gauss(0, 1);  // scouting fog: your view = truth + err * spread[level]
     updateScout(p);
@@ -518,6 +520,7 @@ function draftPlayer(L, pid) {
   if (pick.ovr === 1) story(L, 'DRAFT', `${team.abbr} take ${fullName(p)} first overall`, `The ${team.city} ${team.name} open the ${D.year} Draft by selecting ${p.pos} ${fullName(p)} out of ${p.college}. Rookie deal: 4 years at ${fmtM(p.contract.sal)} per year.`, [team.id], p.id);
   clearScout(p);
   D.pool = D.pool.filter(id => id !== pid);
+  pick.tr = ensureTrueRank(L, D)[pid];
   pick.pid = pid; pick.name = fullName(p); pick.pos = p.pos; pick.pOvr = p.ovr; pick.pPot = p.pot;
   D.cur++;
   if (pick.rd === 1 || team.id === L.userTeam) news(L, `Draft R${pick.rd} #${pick.ovr}: ${team.abbr} select ${p.pos} ${fullName(p)} (${p.college}).`, team.id);
@@ -619,7 +622,7 @@ function simDraftAll(L) { while (!draftDone(L)) aiDraftPick(L); }
 function finishDraft(L) {
   simDraftAll(L);
   const D = L.draft;
-  L.draftHistory[D.year] = D.picks.map(p => ({ ovr: p.ovr, rd: p.rd, tid: p.tid, name: p.name, pos: p.pos, pid: p.pid }));
+  L.draftHistory[D.year] = D.picks.map(p => ({ ovr: p.ovr, rd: p.rd, pk: p.pk, tid: p.tid, name: p.name, pos: p.pos, pid: p.pid, tr: p.tr }));
   D.pool.forEach((pid, i) => {
     const p = L.players[pid];
     if (i < 70) { p.tid = -1; clearScout(p); L.fa.push(pid); } else delete L.players[pid];
@@ -660,7 +663,7 @@ function saveLeague(L) {
   try { localStorage.setItem(SAVE_KEY, serializeLeague(L)); return true; } catch (e) { return false; }
 }
 function loadLeague() {
-  try { const s = localStorage.getItem(SAVE_KEY); if (!s) return null; const L = JSON.parse(s); if (!L || L.version !== 1) return null; for (const id in L.players) { const p = L.players[id]; p.stats = Object.assign(emptyStats(), p.stats); p.pstats = Object.assign(emptyStats(), p.pstats); } migrateLeague(L); migrateBiz(L); return L; } catch (e) { return null; }
+  try { const s = localStorage.getItem(SAVE_KEY); if (!s) return null; const L = JSON.parse(s); if (!L || L.version !== 1) return null; for (const id in L.players) { const p = L.players[id]; p.stats = Object.assign(emptyStats(), p.stats); p.pstats = Object.assign(emptyStats(), p.pstats); } migrateLeague(L); migrateBiz(L); migrateDev(L); return L; } catch (e) { return null; }
 }
 function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function deleteSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }

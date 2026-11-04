@@ -116,8 +116,8 @@ function onBizClick(act, el) {
       persist(); closeModal(); render(); toast(`${fullName(p)} signed: ${yrs} yr / ${fmtM(sal)} per year.`); return true;
     }
     case 'startFA': startFreeAgency(G); persist(); UI.tab = 'fa'; render(); toast('Free agency is open! Other teams sign players in waves.'); return true;
-    case 'faWave': simFAWave(G); persist(); render(); toast(`Wave ${G.faWave}/${FA_WAVES} done.`); return true;
-    case 'finishFA': finishFreeAgency(G); persist(); UI.tab = 'scouting'; render(); toast('Free agency closed. The Scouting Combine is underway.'); return true;
+    case 'faWave': if (G.faWave >= FA_WAVES) { toast('All free agency waves are done.'); return true; } simFAWave(G); persist(); render(); toast(`Wave ${G.faWave}/${FA_WAVES} done.`); return true;
+    case 'finishFA': { finishFreeAgency(G); persist(); UI.tab = 'scouting'; render(); const rv = G.lastFAReview; if (rv) faReviewModal(rv.year); toast('Free agency closed. The Scouting Combine is underway.'); return true; }
     case 'newsType': UI.newsType = v; render(); return true;
   }
   return false;

@@ -109,6 +109,23 @@ input[type=number]{font-family:'VT323',monospace;font-size:20px;background:var(-
 .name-edit{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--c1),var(--panel2));border:2px solid #000;padding:4px 6px;margin:4px 0}
 .name-edit input{font-family:'VT323',monospace;font-size:18px;background:#0a0d1a;color:var(--ink);border:2px solid var(--line);padding:1px 4px}
 .name-edit .tn{width:130px}.name-edit .ta{width:56px;margin-left:4px;text-transform:uppercase}
+.trait{display:inline-block;margin:2px 4px 2px 0;padding:1px 6px;border:2px solid #000;font-size:16px}
+.trait.tp{background:#14361f;color:#8ef0a8}.trait.tn{background:#3a1616;color:#ff9a8a}.trait i{font-style:normal;opacity:.6;font-size:13px;margin-left:4px}
+.traits-sm{font-size:14px;line-height:1.1}.traits-sm .tp{color:#8ef0a8}.traits-sm .tn{color:#ff9a8a}
+.grade{display:inline-block;min-width:26px;text-align:center;font-family:'Press Start 2P',monospace;font-size:9px;padding:3px 4px;border:2px solid #000;color:#111}
+.grade.big{font-size:22px;padding:10px 12px;min-width:70px}
+.g-a{background:#5ee07a}.g-b{background:#b8e05e}.g-c{background:#f0c040}.g-f{background:#f06a5a}
+.arw{font-family:Arial,sans-serif;font-size:12px;padding:1px 5px;margin-left:2px;color:var(--ink)}
+.panel h3 .small{font-size:8px}
+.depth li{display:flex;align-items:center;gap:4px}.depth li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.depth .slot{font-size:12px;width:22px;color:var(--dim, #8a90a8)}
+.edit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 12px}
+.edit-grid label{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.edit-grid input,.edit-grid select{width:84px;font-family:'VT323',monospace;font-size:18px;background:#0a0d1a;color:var(--ink);border:2px solid var(--line);padding:1px 4px}
+.edit-grid input.wide{width:120px}
+.train-slot{display:grid;grid-template-columns:40px 1fr 1fr 140px;gap:10px;align-items:center;padding:8px;border-bottom:2px solid var(--line)}
+@media (max-width:700px){.train-slot{grid-template-columns:30px 1fr}}
+.rv-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .blink{color:var(--acc);font-size:9px;animation:blink 1s steps(2) infinite}@keyframes blink{50%{opacity:0}}
 /* start */
 .start{padding-top:30px}.logo{font-size:30px;text-align:center;line-height:1.4;color:var(--ink);text-shadow:4px 4px 0 #c60c30,8px 8px 0 #000}.logo span{color:var(--acc)}
@@ -149,15 +166,17 @@ ul.rp-log li.td,ul.rp-log li.fg{color:var(--acc)}ul.rp-log li.to{color:var(--bad
 <div id="app"></div>
 <div id="modal" class="modal hidden"></div>
 <div id="toast"></div>
-<script src="js/core.js?v=6"></script>
-<script src="js/schedule.js?v=6"></script>
-<script src="js/sim.js?v=6"></script>
-<script src="js/league.js?v=6"></script>
-<script src="js/gm.js?v=6"></script>
-<script src="js/biz.js?v=6"></script>
-<script src="js/sprites.js?v=6"></script>
-<script src="js/ui.js?v=6"></script>
-<script src="js/ui_gm.js?v=6"></script>
-<script src="js/ui_biz.js?v=6"></script>
+<script src="js/core.js?v=7"></script>
+<script src="js/schedule.js?v=7"></script>
+<script src="js/sim.js?v=7"></script>
+<script src="js/league.js?v=7"></script>
+<script src="js/gm.js?v=7"></script>
+<script src="js/biz.js?v=7"></script>
+<script src="js/dev.js?v=7"></script>
+<script src="js/sprites.js?v=7"></script>
+<script src="js/ui.js?v=7"></script>
+<script src="js/ui_gm.js?v=7"></script>
+<script src="js/ui_biz.js?v=7"></script>
+<script src="js/ui_dev.js?v=7"></script>
 </body>
 </html>
