@@ -291,10 +291,10 @@ function avgPayrollRatio(L) { return L.teams.reduce((s, t) => s + payroll(L, t) 
 //  Historical careers for players who were in the league before day one
 // =====================================================================
 const STARTER_THRESH = { QB: 68, RB: 66, WR: 64, TE: 64, OL: 63, DE: 64, DT: 63, LB: 63, CB: 64, S: 63, K: 0, P: 0 };
-function synthSeason(pos, o) {
+function synthSeason(pos, o, maxG = 17) {
   const s = emptyStats();
   const starter = o + R.gauss(0, 3) >= STARTER_THRESH[pos];
-  let gp = starter ? R.int(12, 17) : R.int(4, 17);
+  let gp = starter ? R.int(maxG - 5, maxG) : R.int(4, maxG);
   if (R.chance(0.12)) gp = R.int(1, 8);
   s.gp = gp; const g = starter ? gp : (R.chance(0.3) ? R.int(0, Math.min(4, gp)) : 0); s.gs = g;
   const bu = gp - g, q = (o - 60) / 30, n = () => R.rand(0.85, 1.15);

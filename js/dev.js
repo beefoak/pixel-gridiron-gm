@@ -333,6 +333,16 @@ function teamStatRanks(L) {
   return { all, ranks };
 }
 
+function canRegenClass(L) { return L.phase === 'regular' && L.week === 1 && !L.scoutStop && (L.prospects || []).length > 0; }
+function regenDraftClass(L) {
+  let refund = 0;
+  for (const id of L.prospects) { const p = L.players[id]; if (p) { const sc = p.sc || 0; refund += sc * (sc + 1) / 2; delete L.players[id]; } }
+  L.scoutPts += refund;
+  L.prospects = generateDraftClass(L, 300);
+  announceGenerational(L);
+  return refund;
+}
+
 // ---------------- Migration for older saves ----------------
 function migrateDev(L) {
   trainState(L);

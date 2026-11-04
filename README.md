@@ -16,7 +16,13 @@ Take over one of 32 franchises and run it season after season:
 - **Salary cap** - a $220M cap that rises each year, contract negotiation, re-signing, free agency waves and dead money.
 - **Negotiation tools** - one-click Budget / Team friendly / Player friendly offers with live acceptance odds, staff-simulated negotiations for the players you don't want to handle, a staff cut review, and early restructures for players on bargain deals. Declining veterans are open to 1-year prove-it deals.
 - **Pro-style season** - 17-game schedules built from the previous year's standings, 7-team conference playoffs and the Megacup.
-- **League history** - generated career stats for veterans, a record book, awards, a Hall of Fame and a News feed of storylines.
+- **Draft class strength** - some classes are stacked, some weak, and positions can run deep or thin. On the Scouting tab you can set the overall class and each position to LOW, AVG or HIGH before the season's scouting begins.
+- **League history since 1967** - every past season, playoff bracket and Megacup champion is generated, with a full roster and stats for every team. Click any year in a team's history to see who played, or check its all-time franchise leaders.
+- **Banners** - team profiles hang pennants for Megacup, conference and division titles.
+- **Hall of Fame** - after every Megacup you vote in up to 5 players from a ballot of retirees, and can open each candidate's career stats and highlights first.
+- **Records & news** - generated career stats for veterans, a record book, awards and a News feed of storylines.
+
+New to the game? Press **? HOW TO PLAY** on the start screen or the **? HELP** tab in-game for a searchable guide and a "what do I do now?" tip for the current phase.
 
 Team names can be customized from the start screen. Games save automatically in your browser (`localStorage`); nothing is sent to a server.
 

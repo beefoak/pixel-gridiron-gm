@@ -185,7 +185,8 @@ function teamModal(tid, tab) {
   const t = TM(tid); const r = teamRatings(G, t);
   const tb = (k, l) => `<button class="chip ${tab === k ? 'on' : ''}" data-act="team" data-id="${tid}" data-v="${k}">${l}</button>`;
   let h = `<div class="franchise">${helm(tid, 72)}<div><div class="px big-name">${esc(t.city)} ${esc(t.name)}</div><div class="sub">${t.conf} ${t.div} · ${recStr(t.rec)} · OFF ${r.off} · DEF ${r.def} · OVR ${r.ovr} · Payroll ${fmtM(payroll(G, t))}</div></div></div>`;
-  h += `<div class="mtabs">${tb('stats', 'TEAM STATS')}${tb('roster', 'ROSTER')}${tb('history', 'HISTORY')}</div>`;
+  h += bannersHtml(t);
+  h += `<div class="mtabs">${tb('stats', 'TEAM STATS')}${tb('roster', 'ROSTER')}${tb('history', 'HISTORY')}${tb('leaders', 'FRANCHISE LEADERS')}</div>`;
   if (tab === 'stats') {
     const src = teamStatSource();
     if (!src || !src.all[tid]) h += '<p class="dim">No games played yet.</p>';
@@ -198,8 +199,10 @@ function teamModal(tid, tab) {
   } else if (tab === 'roster') {
     const ps = t.roster.map(id => G.players[id]).sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
     h += `<div class="scroll tall"><table class="tbl"><tr><th>#</th><th>NAME</th><th>POS</th><th>AGE</th><th>OVR</th><th>POT</th><th>CONTRACT</th><th>STATUS</th><th>SEASON</th></tr>${ps.map(p => `<tr><td class="dim">${p.num}</td><td>${pLink(p)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrB(p.ovr)}</td><td>${potB(p.pot, p.gen)}</td><td class="small">${salCell(p)}</td><td>${statusTag(p)}</td><td class="small">${p.stats.gp ? esc(statLine(p)) : '-'}</td></tr>`).join('')}</table></div>`;
+  } else if (tab === 'leaders') {
+    h += `<p class="dim">All-time leaders in ${esc(t.name)} uniform since ${LORE_START}. Click a name for the full career.</p>` + franchiseLeadersHtml(tid);
   } else {
-    h += t.history.length ? `<table class="tbl"><tr><th>YEAR</th><th>W-L</th><th>PF</th><th>PA</th><th>PPG</th><th>YPG</th><th>RESULT</th></tr>${t.history.slice().reverse().map(s => `<tr><td>${s.year}</td><td>${s.w}-${s.l}${s.t ? '-' + s.t : ''}</td><td>${s.pf ?? '-'}</td><td>${s.pa ?? '-'}</td><td>${s.ts ? s.ts.ppg : '-'}</td><td>${s.ts ? s.ts.ypg : '-'}</td><td>${esc(s.result || '')}</td></tr>`).join('')}</table>` : '<p class="dim">No completed seasons yet.</p>';
+    h += t.history.length ? `<p class="dim small">Click a season to see that year's roster and stats.</p><div class="scroll tall"><table class="tbl"><tr><th>YEAR</th><th>W-L</th><th>PF</th><th>PA</th><th>PPG</th><th>RESULT</th></tr>${t.history.slice().reverse().map(s => `<tr class="clickrow" data-act="teamSeason" data-id="${tid}" data-v="${s.year}"><td><a class="plink">${s.year}</a></td><td>${s.w}-${s.l}${s.t ? '-' + s.t : ''}</td><td>${s.pf ?? '-'}</td><td>${s.pa ?? '-'}</td><td>${s.ts ? s.ts.ppg : s.pf && (s.w + s.l + (s.t || 0)) ? (s.pf / (s.w + s.l + (s.t || 0))).toFixed(1) : '-'}</td><td class="${s.result === 'WON MEGACUP' ? 'gold' : ''}">${s.seed ? '#' + s.seed + ' · ' : ''}${esc(s.result || '')}</td></tr>`).join('')}</table></div>` : '<p class="dim">No completed seasons yet.</p>';
   }
   openModal(h, true);
 }

@@ -134,6 +134,20 @@ input[type=number]{font-family:'VT323',monospace;font-size:20px;background:var(-
 .rv-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .presets{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.presets .btn{font-size:7px;padding:5px 6px;line-height:1.6;flex:1;min-width:90px}.presets .btn .small{font-family:"VT323",monospace;font-size:15px}
 #negOdds{margin:6px 0}
+.hidden{display:none!important}
+.help-q{width:100%;box-sizing:border-box;font-family:'VT323',monospace;font-size:22px;background:#0a0d1a;color:var(--ink);border:3px solid var(--acc);padding:8px 10px;margin:8px 0}
+.help-now{border-color:var(--acc)}.help-now p{margin:6px 0 0}
+.help-item{padding:0;margin:8px 0}.help-item summary{cursor:pointer;padding:10px 12px;list-style:none}.help-item summary::-webkit-details-marker{display:none}
+.help-item summary::before{content:'+';display:inline-block;width:16px;color:var(--acc);font-family:'Press Start 2P',monospace;font-size:10px}.help-item[open] summary::before{content:'-'}
+.help-body{padding:0 14px 12px 30px;font-size:19px;line-height:1.25}.help-body li{margin:3px 0}
+.banners{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;align-items:flex-start}
+.pennant{width:74px;min-height:96px;background:var(--c1);border:3px solid var(--c2);color:#fff;text-align:center;padding:6px 3px 18px;clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);display:flex;flex-direction:column;gap:4px;text-shadow:1px 1px 0 #000;box-sizing:border-box}
+.pennant .pt{font-family:'Press Start 2P',monospace;font-size:6px;line-height:1.5}.pennant b{font-family:'Press Start 2P',monospace;font-size:10px}
+.pn-champ{background:linear-gradient(180deg,#ffd23f,#c99700);color:#111;text-shadow:none;border-color:#000}
+.pn-div{width:auto;min-width:150px;max-width:260px}.pennant .yrs{font-size:13px;line-height:1.1;word-spacing:2px}
+.hof-badge{font-family:'Press Start 2P',monospace;font-size:8px;background:var(--acc);color:#111;padding:3px 6px;border:2px solid #000;vertical-align:middle}
+.cls-strong{color:var(--good)}.cls-weak{color:var(--bad)}.cls-avg{color:var(--dim)}
+.clsset summary{cursor:pointer;margin-top:8px;color:var(--acc)}.clickrow{cursor:pointer}.clickrow:hover td{background:rgba(255,255,255,.05)}
 .blink{color:var(--acc);font-size:9px;animation:blink 1s steps(2) infinite}@keyframes blink{50%{opacity:0}}
 /* start */
 .start{padding-top:30px}.logo{font-size:30px;text-align:center;line-height:1.4;color:var(--ink);text-shadow:4px 4px 0 #c60c30,8px 8px 0 #000}.logo span{color:var(--acc)}
@@ -174,17 +188,20 @@ ul.rp-log li.td,ul.rp-log li.fg{color:var(--acc)}ul.rp-log li.to{color:var(--bad
 <div id="app"></div>
 <div id="modal" class="modal hidden"></div>
 <div id="toast"></div>
-<script src="js/core.js?v=9"></script>
-<script src="js/schedule.js?v=9"></script>
-<script src="js/sim.js?v=9"></script>
-<script src="js/league.js?v=9"></script>
-<script src="js/gm.js?v=9"></script>
-<script src="js/biz.js?v=9"></script>
-<script src="js/dev.js?v=9"></script>
-<script src="js/sprites.js?v=9"></script>
-<script src="js/ui.js?v=9"></script>
-<script src="js/ui_gm.js?v=9"></script>
-<script src="js/ui_biz.js?v=9"></script>
-<script src="js/ui_dev.js?v=9"></script>
+<script src="js/core.js?v=12"></script>
+<script src="js/schedule.js?v=12"></script>
+<script src="js/sim.js?v=12"></script>
+<script src="js/league.js?v=12"></script>
+<script src="js/gm.js?v=12"></script>
+<script src="js/biz.js?v=12"></script>
+<script src="js/dev.js?v=12"></script>
+<script src="js/lore.js?v=12"></script>
+<script src="js/sprites.js?v=12"></script>
+<script src="js/ui.js?v=12"></script>
+<script src="js/ui_gm.js?v=12"></script>
+<script src="js/ui_biz.js?v=12"></script>
+<script src="js/ui_dev.js?v=12"></script>
+<script src="js/ui_lore.js?v=12"></script>
+<script src="js/help.js?v=12"></script>
 </body>
 </html>

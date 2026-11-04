@@ -34,6 +34,7 @@ function render() {
   if (!G) { app.innerHTML = renderStart(); return; }
   app.innerHTML = renderHeader() + renderNav() + `<main id="main">${renderTab()}</main><footer class="foot">PIXEL GRIDIRON GM · fictional league, not affiliated with any pro league · autosaves in this browser</footer>`;
   if (UI.tab === 'home') drawBanner();
+  if (UI.tab === 'help') filterHelp();
 }
 
 const NAMES_KEY = 'pixel_gridiron_team_names';
@@ -60,7 +61,7 @@ function setStartName(i, field, raw) {
 function renderStart() {
   const saved = hasSave();
   let h = `<div class="start"><div class="logo px">PIXEL<br><span>GRIDIRON</span> GM</div>
-  <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p>`;
+  <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p><div class="center"><button class="btn alt" data-act="helpOpen">? HOW TO PLAY</button></div>`;
   if (saved) h += `<div class="center"><button class="btn big" data-act="continue">&gt; CONTINUE SAVED GAME</button></div>`;
   h += `<h2 class="px">${UI.editNames ? 'NAME YOUR LEAGUE' : saved ? 'OR START A NEW FRANCHISE' : 'CHOOSE YOUR TEAM'}</h2>
   <div class="center">${UI.editNames ? `<p class="dim">Rename any team and its abbreviation (2-4 letters). Cities and colors stay the same. Names are remembered in this browser.</p><button class="btn" data-act="namesDone">DONE - PICK A TEAM</button><button class="btn alt" data-act="namesReset">RESET TO DEFAULTS</button>` : `<button class="btn alt" data-act="namesEdit">CUSTOMIZE TEAM NAMES</button>`}</div><div class="pick-grid">`;
@@ -97,7 +98,7 @@ function phaseButtons() {
     case 'regular': return `<button class="btn" data-act="playWeek">&gt; PLAY WEEK ${G.week}</button><button class="btn alt" data-act="simSeason">»» SIM TO PLAYOFFS</button>`;
     case 'awards': return `<button class="btn alt" data-act="tab" data-tab="awards">AWARDS</button><button class="btn" data-act="startPlayoffs">&gt; START PLAYOFFS</button>`;
     case 'playoffs': return `<button class="btn" data-act="playRound">&gt; PLAY ${ROUND_NAMES[G.playoffs.round].toUpperCase()}</button><button class="btn alt" data-act="simPlayoffs">»» SIM PLAYOFFS</button>`;
-    case 'postseason': return `<button class="btn" data-act="offseason">&gt; BEGIN OFFSEASON</button>`;
+    case 'postseason': return G.hofVoted && G.hofVoted[G.year] ? `<button class="btn alt" data-act="hofBallot">HALL OF FAME</button><button class="btn" data-act="offseason">&gt; BEGIN OFFSEASON</button>` : `<button class="btn" data-act="hofBallot">HALL OF FAME VOTE</button><button class="btn alt" data-act="offseason">SKIP VOTE &gt; OFFSEASON</button>`;
     case 'draft': return `${reviewButtons()}<button class="btn alt" data-act="tab" data-tab="draft">DRAFT BOARD</button><button class="btn" data-act="finishDraft">»» AUTO-FINISH DRAFT</button>`;
     case 'resign': return `<button class="btn alt" data-act="tab" data-tab="contracts">EXPIRING DEALS</button><button class="btn" data-act="startFA">BEGIN FREE AGENCY &gt;</button>`;
     case 'freeagency': return `<button class="btn alt" data-act="tab" data-tab="fa">FREE AGENTS</button>${G.faWave < FA_WAVES ? `<button class="btn alt" data-act="faWave">SIM FA WAVE ${G.faWave + 1}/${FA_WAVES}</button>` : '<span class="dim small">ALL WAVES DONE</span>'}<button class="btn" data-act="finishFA">FINISH FREE AGENCY &gt;</button>`;
@@ -113,15 +114,15 @@ function renderHeader() {
     <div class="actions">${phaseButtons()}</div>
     <div class="menu"><label class="chk"><input type="checkbox" data-change="watch" ${UI.watch ? 'checked' : ''}> Watch my games</label>
     <label class="chk"><input type="checkbox" data-change="autoRoster" ${G.autoRoster ? 'checked' : ''}> Auto-manage injuries</label>
-    <button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
+    <button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
   </header>`;
 }
 function renderNav() {
-  const tabs = [['home', 'HOME'], ['roster', 'ROSTER'], ['depth', 'DEPTH'], ['training', 'TRAINING'], ['schedule', 'SCHEDULE'], ['standings', 'STANDINGS'], ['playoffs', 'PLAYOFFS'], ['leaders', 'LEADERS'], ['injuries', 'INJURIES'], ['news', 'NEWS'], ['fa', 'FREE AGENTS'], ['trade', 'TRADE'], ['contracts', 'CONTRACTS'], ['scouting', 'SCOUTING'], ['draft', 'DRAFT'], ['awards', 'AWARDS'], ['history', 'HISTORY'], ['records', 'RECORDS']];
+  const tabs = [['home', 'HOME'], ['roster', 'ROSTER'], ['depth', 'DEPTH'], ['training', 'TRAINING'], ['schedule', 'SCHEDULE'], ['standings', 'STANDINGS'], ['playoffs', 'PLAYOFFS'], ['leaders', 'LEADERS'], ['injuries', 'INJURIES'], ['news', 'NEWS'], ['fa', 'FREE AGENTS'], ['trade', 'TRADE'], ['contracts', 'CONTRACTS'], ['scouting', 'SCOUTING'], ['draft', 'DRAFT'], ['awards', 'AWARDS'], ['history', 'HISTORY'], ['records', 'RECORDS'], ['help', '? HELP']];
   return `<nav class="tabs">${tabs.filter(([k]) => k !== 'playoffs' || G.playoffs).filter(([k]) => k !== 'draft' || G.draft || G.draftHistory[G.year]).map(([k, n]) => `<button class="tab px ${UI.tab === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${n}</button>`).join('')}</nav>`;
 }
 function renderTab() {
-  const f = { home: vHome, roster: vRoster, depth: vDepth, training: vTraining, schedule: vSchedule, standings: vStandings, playoffs: vPlayoffs, leaders: vLeaders, injuries: vInjuries, fa: vFA, trade: vTrade, news: vNews, contracts: vContracts, records: vRecords, scouting: vScouting, draft: vDraft, awards: vAwards, history: vHistory }[UI.tab] || vHome;
+  const f = { home: vHome, roster: vRoster, depth: vDepth, training: vTraining, schedule: vSchedule, standings: vStandings, playoffs: vPlayoffs, leaders: vLeaders, injuries: vInjuries, fa: vFA, trade: vTrade, news: vNews, contracts: vContracts, records: vRecords, scouting: vScouting, draft: vDraft, awards: vAwards, history: vHistory, help: vHelp }[UI.tab] || vHome;
   return f();
 }
 const panel = (title, body, cls) => `<section class="panel ${cls || ''}">${title ? `<h3 class="px">${title}</h3>` : ''}${body}</section>`;
@@ -414,11 +415,17 @@ function vAwards() {
 function vHistory() {
   const u = TM(G.userTeam);
   let h = `<div class="grid2">`;
-  h += panel('MEGACUP CHAMPIONS', G.champions.length ? `<table class="tbl"><tr><th>YEAR</th><th>CHAMPION</th><th>RUNNER-UP</th><th>SCORE</th><th>MVP</th></tr>${G.champions.slice().reverse().map(c => `<tr><td>${c.year}</td><td>${teamLink(c.champ, true)}</td><td>${teamLink(c.runner)}</td><td>${c.score}${c.ot ? ' OT' : ''}</td><td class="small">${c.mvp ? esc(c.mvp.name) : '-'}</td></tr>`).join('')}</table>` : '<p class="dim">No champions crowned yet.</p>');
-  h += panel(`${esc(u.name.toUpperCase())} HISTORY`, u.history.length ? `<table class="tbl"><tr><th>YEAR</th><th>REC</th><th>PF</th><th>PA</th><th>RESULT</th></tr>${u.history.slice().reverse().map(s => `<tr><td>${s.year}</td><td>${s.w}-${s.l}${s.t ? '-' + s.t : ''}</td><td>${s.pf}</td><td>${s.pa}</td><td class="${s.result.startsWith('WON') ? 'good' : ''}">${s.seed ? '#' + s.seed + ' seed · ' : ''}${s.result}</td></tr>`).join('')}</table>` : '<p class="dim">Complete a season to build your legacy.</p>');
+  const smvp = (c) => c.seasonMvp ? (c.seasonMvp.key ? `<a class="plink" data-act="hofView" data-src="lore" data-k="${c.seasonMvp.key}">${esc(c.seasonMvp.name)}</a>` : esc(c.seasonMvp.name)) : (G.awards[c.year] && G.awards[c.year].MVP && G.awards[c.year].MVP[0] ? esc(G.awards[c.year].MVP[0].name) : '-');
+  const mcmvp = (c) => c.mvp ? (c.mvp.key ? `<a class="plink" data-act="hofView" data-src="lore" data-k="${c.mvp.key}">${esc(c.mvp.name)}</a>` : c.mvp.pid && G.players[c.mvp.pid] ? pLink(G.players[c.mvp.pid]) : esc(c.mvp.name)) : '-';
+  h += panel(`MEGACUP CHAMPIONS (${G.champions.length})`, G.champions.length ? `<div class="scroll tall"><table class="tbl"><tr><th>YEAR</th><th>CHAMPION</th><th>RUNNER-UP</th><th>SCORE</th><th>MEGACUP MVP</th><th>SEASON MVP</th></tr>${G.champions.slice().reverse().map(c => `<tr class="${c.champ === G.userTeam ? 'me-row' : ''}"><td>${c.year}</td><td>${teamLink(c.champ)}</td><td>${teamLink(c.runner)}</td><td>${c.score}${c.ot ? ' OT' : ''}</td><td class="small">${mcmvp(c)}</td><td class="small">${smvp(c)}</td></tr>`).join('')}</table></div>` : '<p class="dim">No champions crowned yet.</p>');
+  const titles = {}; G.champions.forEach(c => titles[c.champ] = (titles[c.champ] || 0) + 1);
+  const most = Object.entries(titles).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  h += `<div>` + panel(`${esc(u.name.toUpperCase())} BANNERS`, bannersHtml(u) + `<div class="pact"><button class="btn tiny alt" data-act="team" data-id="${u.id}" data-v="history">SEASON BY SEASON</button><button class="btn tiny alt" data-act="team" data-id="${u.id}" data-v="leaders">FRANCHISE LEADERS</button></div>`)
+    + panel('MOST MEGACUPS', `<table class="tbl">${most.map(([tid, n]) => `<tr><td>${teamLink(+tid, true)}</td><td class="r gold"><b>${n}</b></td></tr>`).join('')}</table>`) + `</div>`;
   h += `</div>`;
-  const hof = G.retired.slice().sort((a, b) => (b.hof - a.hof) || b.awards.length - a.awards.length);
-  h += panel('HALL OF FAME & NOTABLE RETIREES', hof.length ? `<div class="scroll"><table class="tbl"><tr><th></th><th>NAME</th><th>POS</th><th>YEARS</th><th>LAST TEAM</th><th>CAREER</th><th>HONORS</th></tr>${hof.map(r => `<tr><td>${r.hof ? '<span class="gold px small">HOF</span>' : ''}</td><td>${esc(r.name)}</td><td>${r.pos}</td><td>${r.from}-${r.to}</td><td>${r.lastTeam}</td><td class="small">${esc(careerSummary(r.pos, r.tot))}</td><td class="small dim">${esc(summarizeAwards(r.awards))}</td></tr>`).join('')}</table></div>` : '<p class="dim">No notable retirements yet.</p>');
+  h += hofPanel();
+  const rets = G.retired.filter(r => !(G.hof || []).some(x => x.key === r.key)).slice().reverse();
+  if (rets.length) h += panel('NOTABLE RETIREES', `<div class="scroll"><table class="tbl"><tr><th>NAME</th><th>POS</th><th>YEARS</th><th>LAST TEAM</th><th>CAREER</th><th>HONORS</th><th>HOF</th></tr>${rets.map(r => `<tr><td>${r.career ? `<a class="plink" data-act="hofView" data-src="real" data-k="${r.key}">${esc(r.name)}</a>` : esc(r.name)}</td><td>${r.pos}</td><td>${r.from}-${r.to}</td><td>${r.lastTeam}</td><td class="small">${esc(careerSummary(r.pos, r.tot))}</td><td class="small dim">${esc(summarizeAwards(r.awards))}</td><td class="small dim">${r.to + HOF_WAIT <= G.year ? 'eligible' : 'eligible ' + (r.to + HOF_WAIT)}</td></tr>`).join('')}</table></div>`);
   const dYears = Object.keys(G.draftHistory).map(Number).sort((a, b) => b - a);
   if (dYears.length) {
     const y = UI.histYear && G.draftHistory[UI.histYear] ? UI.histYear : dYears[0];
@@ -603,7 +610,10 @@ function onClick(e) {
   const act = el.dataset.act, id = el.dataset.id, v = el.dataset.v;
   if (onBizClick(act, el)) return;
   if (onDevClick(act, el)) return;
+  if (onLoreClick(act, el)) return;
   switch (act) {
+    case 'helpOpen': openHelpModal(); break;
+    case 'helpCat': UI.helpCat = v; if ($('#modal .help')) openHelpModal(); else render(); break;
     case 'namesEdit': UI.editNames = true; render(); break;
     case 'namesDone': UI.editNames = false; render(); break;
     case 'namesReset': UI.names = null; try { localStorage.removeItem(NAMES_KEY); } catch (e) { /* ignore */ } render(); break;
@@ -691,6 +701,7 @@ function onClick(e) {
 function onChange(e) {
   const el = e.target; const k = el.dataset.change; if (!k) return;
   if (onDevChange(k, el)) return;
+  if (onLoreChange(k, el)) return;
   if (k === 'watch') UI.watch = el.checked;
   else if (k === 'autoRoster') { G.autoRoster = el.checked; persist(); }
   else if (k === 'schedWeek') { UI.schedWeek = +el.value; render(); }

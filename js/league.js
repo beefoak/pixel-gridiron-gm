@@ -50,8 +50,8 @@ function newLeague(userTeam, customNames) {
   L.cap = START_CAP; L.capHist = [{ year: L.year, cap: L.cap, g: 0 }];
   assignInitialContracts(L);
   genRecords(L); L.stories = []; L.flags = {};
-  const ranks = {};
-  for (let c = 0; c < 2; c++) for (let d = 0; d < 4; d++) { const order = R.shuffle([0, 1, 2, 3]); for (let k = 0; k < 4; k++) ranks[tidOf(c, d, k)] = order[k]; }
+  L.hof = []; L.hofVoted = {};
+  const ranks = genLore(L);
   L.schedule = makeSchedule(L.year, ranks);
   L.pickOwn = {}; L.trades = []; L.scoutPts = 6; L.scoutStop = null; L.scoutReport = null;
   L.prospects = generateDraftClass(L, 300);
@@ -471,7 +471,8 @@ function runOffseason(L) {
       const notable = p.awards.length > 0 || p.career.length >= 10 || Math.max(p.ovr, ...p.ovrHist.map(h => h.o)) >= 88;
       if (notable) {
         const majors = p.awards.filter(a => /MVP|POY|All-Pro/.test(a)).length;
-        L.retired.push({ name: fullName(p), pos: p.pos, from: p.career.length ? p.career[0].year : L.year - 1, to: L.year - 1, seasons: p.career.length, awards: p.awards.slice(), tot: compactStats(tot), hof: majors >= 4 || p.awards.some(a => / MVP$/.test(a) && !/Megacup|Super/.test(a)) && majors >= 2, lastTeam: p.career.length ? p.career[p.career.length - 1].tm : '' });
+        L.retired.push({ key: 'R' + p.id, name: fullName(p), pos: p.pos, from: p.career.length ? p.career[0].year : L.year - 1, to: L.year - 1, seasons: p.career.length, awards: p.awards.slice(), tot: compactStats(tot), hof: false, lastTeam: p.career.length ? p.career[p.career.length - 1].tm : '', peak: Math.max(p.ovr, ...p.ovrHist.map(h => h.o)), score: hofScore(p.career, p.awards, p.pos), majors });
+        { const r = L.retired[L.retired.length - 1]; if (r.score >= 40) r.career = p.career.slice(); } // only plausible Hall of Famers keep season-by-season stats
       }
       if (notable && (p.awards.length >= 2 || p.ovr >= 82)) story(L, 'RETIREMENT', `${fullName(p)} retires`, `${p.pos} ${fullName(p)} calls it a career after ${p.career.length} seasons. ${careerLineText(p, tot)}${p.awards.length ? ' Honors: ' + summarizeAwardsText(p.awards) + '.' : ''}`, p.tid >= 0 ? [p.tid] : [], undefined);
       if ((p.tid === L.userTeam) || p.ovr >= 82 || notable) news(L, `${p.pos} ${fullName(p)} (${p.tid >= 0 ? L.teams[p.tid].abbr : 'FA'}) has retired after ${p.career.length} seasons.`, p.tid);
@@ -495,13 +496,27 @@ function runOffseason(L) {
   news(L, `${retiredCount} players retired. The ${L.year} Draft order is set - ${L.teams[picks[0].tid].abbr} picks first. Re-sign your expiring players before free agency opens.`, L.userTeam);
 }
 
+// Class strength: overall (weak / avg / strong) and per position (low / avg / high).
+// The user's settings (L.classCfg) pin any of these; 'random' lets the class decide.
+const CLASS_SHIFT = { weak: -3.5, avg: 0, strong: 3.5 };
+const POS_TIER = { low: [0.6, -3.5], avg: [1, 0], high: [1.5, 3.5] };
+function rollClassProfile(L) {
+  const cfg = L.classCfg || {};
+  const overall = cfg.overall && cfg.overall !== 'random' ? cfg.overall : R.weighted(['weak', 'avg', 'strong'], x => x === 'avg' ? 0.6 : 0.2);
+  const pos = {};
+  for (const ps of POSITIONS) { const c = cfg.pos && cfg.pos[ps]; pos[ps] = c && c !== 'random' ? c : R.weighted(['low', 'avg', 'high'], x => x === 'avg' ? 0.7 : 0.15); }
+  return { overall, pos };
+}
 function generateDraftClass(L, n) {
   const ids = [];
+  const prof = rollClassProfile(L);
+  L.classProfile = { year: (L.phase === 'draft' ? L.year : L.year + 1), ...prof };
   for (let i = 0; i < n; i++) {
-    const pos = R.weighted(POSITIONS, ps => POS_DRAFT_W[ps]);
+    const pos = R.weighted(POSITIONS, ps => POS_DRAFT_W[ps] * POS_TIER[prof.pos[ps]][0]);
     const q = Math.pow(Math.random(), 2.3);
     const age = R.int(21, 23);
-    const p = createPlayer(L, pos, 42 + q * 36 + R.gauss(0, 2), age);
+    const shift = (CLASS_SHIFT[prof.overall] + POS_TIER[prof.pos[pos]][1]) * (0.4 + q * 0.9);
+    const p = createPlayer(L, pos, 42 + q * 36 + shift + R.gauss(0, 2), age);
     p.tid = -2; p.exp = 0;
     assignTraits(p, true);
     p.pot = clamp(Math.round(p.ovr + R.rand(3, 20) + q * 8 + (age === 21 ? 3 : 0)), p.ovr, 99);
@@ -509,7 +524,8 @@ function generateDraftClass(L, n) {
     updateScout(p);
     L.players[p.id] = p; ids.push(p.id);
   }
-  const nGen = R.chance(0.3) ? (R.chance(0.12) ? 2 : 1) : 0;
+  const genP = prof.overall === 'strong' ? 0.45 : prof.overall === 'weak' ? 0.15 : 0.3;
+  const nGen = R.chance(genP) ? (R.chance(0.12) ? 2 : 1) : 0;
   for (let i = 0; i < nGen; i++) { const p = makeGenerational(L); L.players[p.id] = p; ids.push(p.id); }
   return sortBoard(L, ids);
 }
@@ -677,7 +693,7 @@ function saveLeague(L) {
   try { localStorage.setItem(SAVE_KEY, serializeLeague(L)); return true; } catch (e) { return false; }
 }
 function loadLeague() {
-  try { const s = localStorage.getItem(SAVE_KEY); if (!s) return null; const L = JSON.parse(s); if (!L || L.version !== 1) return null; for (const id in L.players) { const p = L.players[id]; p.stats = Object.assign(emptyStats(), p.stats); p.pstats = Object.assign(emptyStats(), p.pstats); } migrateLeague(L); migrateBiz(L); migrateDev(L); return L; } catch (e) { return null; }
+  try { const s = localStorage.getItem(SAVE_KEY); if (!s) return null; const L = JSON.parse(s); if (!L || L.version !== 1) return null; for (const id in L.players) { const p = L.players[id]; p.stats = Object.assign(emptyStats(), p.stats); p.pstats = Object.assign(emptyStats(), p.pstats); } migrateLeague(L); migrateBiz(L); migrateDev(L); migrateLore(L); return L; } catch (e) { return null; }
 }
 function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function deleteSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }

@@ -74,6 +74,7 @@ function vScouting() {
   let h = `<div class="draft-banner ${stop ? 'mine' : ''}"><div><div class="px">${stop ? esc(stop.name.toUpperCase()) : `${year} DRAFT CLASS SCOUTING`}</div>
     <div>${stop ? 'Your scouts are back from the road. Spend points to sharpen reports, then press DONE SCOUTING to continue.' : `Next check-in: ${esc(nextScoutLabel())}.`}</div></div>
     <div class="actions"><span class="px small gold">${G.scoutPts} PTS</span><button class="btn alt" data-act="autoScout" ${G.scoutPts ? '' : 'disabled'}>AUTO-SCOUT</button>${stop ? `<button class="btn" data-act="scoutDone">DONE SCOUTING &gt;</button>` : ''}</div></div>`;
+  h += draftClassPanel();
   if (!board.length) return h + panel('PROSPECTS', '<p class="dim">The next draft class will be revealed when the season starts.</p>');
   const rep = G.scoutReport;
   const me = TM(G.userTeam); const needs = teamNeeds(G, me);

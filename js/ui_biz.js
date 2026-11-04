@@ -134,7 +134,7 @@ function vRecords() {
   h += panel('RECORDS BROKEN', log.length ? `<table class="tbl">${log.slice(0, 40).map(l => `<tr><td class="dim">${l.y}${l.w ? ' W' + (l.w - (l.scope === 'game' || l.scope === 'tgame' ? 0 : 0)) : ''}</td><td>${esc(l.name)} (${l.abbr})</td><td>${l.scope} ${l.label.toLowerCase()}</td><td><b>${l.val.toLocaleString()}</b> <span class="dim small">prev ${l.old.toLocaleString()} - ${esc(l.oldName)} ${l.oldYear}</span></td></tr>`).join('')}</table>` : '<p class="dim">No records have fallen yet. Who will be first?</p>');
   return h;
 }
-const STORY_ICON = { RECORD: '★', CHASE: '»', MILESTONE: '◆', RETURN: '+', INJURY: '✚', RIVALRY: '⚔', PREVIEW: '▶', STREAK: '~', RACE: '#', TRADE: '⇄', SIGNING: '$', 'FREE AGENCY': '$', DRAFT: '◎', CAP: '$', RETIREMENT: '☾', AWARD: '♛', CHAMPION: '♛' };
+const STORY_ICON = { RECORD: '★', CHASE: '»', MILESTONE: '◆', RETURN: '+', INJURY: '✚', RIVALRY: '⚔', PREVIEW: '▶', STREAK: '~', RACE: '#', TRADE: '⇄', SIGNING: '$', 'FREE AGENCY': '$', DRAFT: '◎', CAP: '$', RETIREMENT: '☾', AWARD: '♛', CHAMPION: '♛', 'HALL OF FAME': '♛' };
 function storyCard(s, big) {
   const when = s.w ? `${s.y} · Week ${s.w}` : `${s.y} · ${({ resign: 'Offseason', freeagency: 'Free Agency', draft: 'Draft', preseason: 'Preseason', awards: 'Awards', playoffs: 'Playoffs', postseason: 'Postseason', regular: 'Season' })[s.ph] || ''}`;
   const p = s.pid && G.players[s.pid];
