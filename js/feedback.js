@@ -46,7 +46,7 @@ function readFeedbackForm() {
 }
 function feedbackMailto(kindLabel, d) {
   const body = `${d.body}\n\n${d.ctx ? '---\n' + feedbackContext() : ''}`;
-  return `mailto:${feedbackAddr()}?subject=${encodeURIComponent(`[Pixel Gridiron GM] ${kindLabel}: ${d.title}`)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${feedbackAddr()}?subject=${encodeURIComponent(`[BitIron] ${kindLabel}: ${d.title}`)}&body=${encodeURIComponent(body)}`;
 }
 async function sendFeedback() {
   const d = readFeedbackForm(), st = $('#fbStatus');
@@ -58,7 +58,7 @@ async function sendFeedback() {
   const btn = $('[data-act=fbSend]'); btn.disabled = true; btn.textContent = 'SENDING...';
   st.className = 'small dim'; st.textContent = '';
   const payload = {
-    access_key: FEEDBACK_KEY, subject: `[Pixel Gridiron GM] ${kindLabel}: ${d.title}`, from_name: 'Pixel Gridiron GM player',
+    access_key: FEEDBACK_KEY, subject: `[BitIron] ${kindLabel}: ${d.title}`, from_name: 'BitIron player',
     type: kindLabel, summary: d.title, message: d.body, reply_to: d.email || '(none)',
   };
   if (d.email) payload.email = d.email; // Web3Forms uses this as the reply-to address

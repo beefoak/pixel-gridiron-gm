@@ -32,7 +32,7 @@ const cell = (s, c) => typeof c[1] === 'function' ? c[1](s) : st(s, c[1]);
 function render() {
   const app = $('#app');
   if (!G) { app.innerHTML = renderStart(); return; }
-  app.innerHTML = renderHeader() + renderNav() + `<main id="main">${renderTab()}</main><footer class="foot">PIXEL GRIDIRON GM · fictional league, not affiliated with any pro league · autosaves in this browser</footer>`;
+  app.innerHTML = renderHeader() + renderNav() + `<main id="main">${renderTab()}</main><footer class="foot">BITIRON · fictional league, not affiliated with any pro league · autosaves in this browser</footer>`;
   if (UI.tab === 'home') drawBanner();
   if (UI.tab === 'help') filterHelp();
 }
@@ -63,7 +63,7 @@ const SWITCH_SITE = { url: 'https://beefoak.github.io/pixel-gridiron-gm-beta/', 
 function switchSiteBtn(tiny) { return `<button class="btn ${tiny ? 'tiny ' : ''}alt" data-act="switchSite" title="${SWITCH_SITE.title}">${SWITCH_SITE.label}</button>`; }
 function renderStart() {
   const saved = hasSave();
-  let h = `<div class="start"><div class="logo px">PIXEL<br><span>GRIDIRON</span> GM</div>
+  let h = `<div class="start"><div class="logo px">BIT<span>IRON</span></div>
   <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p><div class="center"><button class="btn alt" data-act="helpOpen">? HOW TO PLAY</button> <button class="btn alt" data-act="feedback">✉ FEEDBACK</button> ${switchSiteBtn()}</div>`;
   if (saved) h += `<div class="center"><button class="btn big" data-act="continue">&gt; CONTINUE SAVED GAME</button></div>`;
   h += `<h2 class="px">${UI.editNames ? 'NAME YOUR LEAGUE' : saved ? 'OR START A NEW FRANCHISE' : 'CHOOSE YOUR TEAM'}</h2>
@@ -112,7 +112,7 @@ function phaseButtons() {
 function renderHeader() {
   const u = TM(G.userTeam);
   return `<header class="top" style="--c1:${u.c1};--c2:${u.c2}">
-    <div class="brand px">PIXEL GRIDIRON GM</div>
+    <div class="brand px">BITIRON</div>
     <div class="me">${helm(u.id, 44)}<div><div class="px tname">${esc(u.city)} ${esc(u.name)}</div><div class="sub">${recStr(u.rec)} · ${phaseLabel()} · ${capChip()}</div></div></div>
     <div class="actions">${phaseButtons()}</div>
     <div class="menu"><label class="chk"><input type="checkbox" data-change="watch" ${UI.watch ? 'checked' : ''}> Watch my games</label>

@@ -1,4 +1,4 @@
-# Pixel Gridiron GM
+# BitIron
 
 A pixel-art pro football general manager game that runs entirely in the browser.
 
