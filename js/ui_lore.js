@@ -9,7 +9,7 @@ function bannersHtml(t) {
   const pen = (cls, top, yr) => `<div class="pennant ${cls}" style="--c1:${t.c1};--c2:${t.c2}"><span class="pt">${top}</span><b>${yr}</b></div>`;
   let h = `<div class="banners">`;
   h += b.champ.map(y => pen('pn-champ', 'MEGACUP<br>CHAMPIONS', y)).join('');
-  h += b.conf.filter(y => !b.champ.includes(y)).map(y => pen('pn-conf', `${t.conf.toUpperCase()}<br>CHAMPIONS`, y)).join('');
+  h += b.conf.map(y => pen('pn-conf', `${t.conf.toUpperCase()}<br>CHAMPIONS`, y)).join('');
   if (b.div.length) h += `<div class="pennant pn-div" style="--c1:${t.c1};--c2:${t.c2}"><span class="pt">${t.div.toUpperCase()} DIVISION<br>CHAMPIONS</span><b>${b.div.length}×</b><span class="yrs">${b.div.map(y => "'" + String(y).slice(2)).join(' ')}</span></div>`;
   h += `</div><div class="dim small">${b.champ.length} Megacup title${b.champ.length === 1 ? '' : 's'} · ${b.conf.length} conference title${b.conf.length === 1 ? '' : 's'} · ${b.div.length} division title${b.div.length === 1 ? '' : 's'} · ${b.playoffs} playoff appearances</div>`;
   return h;
