@@ -61,7 +61,7 @@ function setStartName(i, field, raw) {
 function renderStart() {
   const saved = hasSave();
   let h = `<div class="start"><div class="logo px">PIXEL<br><span>GRIDIRON</span> GM</div>
-  <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p><div class="center"><button class="btn alt" data-act="helpOpen">? HOW TO PLAY</button></div>`;
+  <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p><div class="center"><button class="btn alt" data-act="helpOpen">? HOW TO PLAY</button> <button class="btn alt" data-act="feedback">✉ FEEDBACK</button></div>`;
   if (saved) h += `<div class="center"><button class="btn big" data-act="continue">&gt; CONTINUE SAVED GAME</button></div>`;
   h += `<h2 class="px">${UI.editNames ? 'NAME YOUR LEAGUE' : saved ? 'OR START A NEW FRANCHISE' : 'CHOOSE YOUR TEAM'}</h2>
   <div class="center">${UI.editNames ? `<p class="dim">Rename any team and its abbreviation (2-4 letters). Cities and colors stay the same. Names are remembered in this browser.</p><button class="btn" data-act="namesDone">DONE - PICK A TEAM</button><button class="btn alt" data-act="namesReset">RESET TO DEFAULTS</button>` : `<button class="btn alt" data-act="namesEdit">CUSTOMIZE TEAM NAMES</button>`}</div><div class="pick-grid">`;
@@ -114,7 +114,7 @@ function renderHeader() {
     <div class="actions">${phaseButtons()}</div>
     <div class="menu"><label class="chk"><input type="checkbox" data-change="watch" ${UI.watch ? 'checked' : ''}> Watch my games</label>
     <label class="chk"><input type="checkbox" data-change="autoRoster" ${G.autoRoster ? 'checked' : ''}> Auto-manage injuries</label>
-    <button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
+    <button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="feedback" title="Report a bug or send a suggestion">✉ FEEDBACK</button><button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
   </header>`;
 }
 function renderNav() {
@@ -611,6 +611,7 @@ function onClick(e) {
   if (onBizClick(act, el)) return;
   if (onDevClick(act, el)) return;
   if (onLoreClick(act, el)) return;
+  if (onFeedbackClick(act, el)) return;
   switch (act) {
     case 'helpOpen': openHelpModal(); break;
     case 'helpCat': UI.helpCat = v; if ($('#modal .help')) openHelpModal(); else render(); break;

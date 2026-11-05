@@ -24,6 +24,8 @@ Take over one of 32 franchises and run it season after season:
 
 New to the game? Press **? HOW TO PLAY** on the start screen or the **? HELP** tab in-game for a searchable guide and a "what do I do now?" tip for the current phase.
 
+Found a bug or have an idea? Press **✉ FEEDBACK** (start screen or the header) to send a bug report, suggestion or feedback straight to the developer.
+
 Team names can be customized from the start screen. Games save automatically in your browser (`localStorage`); nothing is sent to a server.
 
 ## Play locally
