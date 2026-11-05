@@ -282,6 +282,16 @@ function castHofVotes(L, keys) {
   return chosen;
 }
 
+// Committee vote when the user skips: everyone with a clear Hall of Fame case, up to the usual limit.
+const HOF_AUTO_BAR = 75;
+function autoHofVotes(L) {
+  if (L.hofVoted && L.hofVoted[L.year]) return null;
+  const b = hofBallot(L);
+  let pick = b.filter(c => c.score >= HOF_AUTO_BAR).slice(0, HOF_MAX_VOTES);
+  if (!pick.length && b.length && b[0].score >= 50) pick = [b[0]];
+  return castHofVotes(L, pick.map(c => c.key));
+}
+
 function migrateLore(L) {
   if (!L.lore) {
     genLore(L, { migrate: true });

@@ -19,7 +19,9 @@ Take over one of 32 franchises and run it season after season:
 - **Draft class strength** - some classes are stacked, some weak, and positions can run deep or thin. On the Scouting tab you can set the overall class and each position to LOW, AVG or HIGH before the season's scouting begins.
 - **League history since 1967** - every past season, playoff bracket and Megacup champion is generated, with a full roster and stats for every team. Click any year in a team's history to see who played, or check its all-time franchise leaders.
 - **Banners** - team profiles hang pennants for Megacup, conference and division titles.
-- **Hall of Fame** - after every Megacup you vote in up to 5 players from a ballot of retirees, and can open each candidate's career stats and highlights first.
+- **Hall of Fame** - after every Megacup you vote in up to 5 players from a ballot of retirees, and can open each candidate's career stats and highlights first. Skip the vote and a selection committee inducts the clear cases.
+- **Trade offers** - rival teams call with offers (picks, players or both) before the trade deadline and when you're on the clock in the draft. Accept, decline or counter.
+- **Sim-ahead scouting** - simming past scouting check-ins lets your scouts spend points for you, targeting needs that are likely to be there at your projected picks.
 - **Records & news** - generated career stats for veterans, a record book, awards and a News feed of storylines.
 
 New to the game? Press **? HOW TO PLAY** on the start screen or the **? HELP** tab in-game for a searchable guide and a "what do I do now?" tip for the current phase.

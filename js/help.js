@@ -115,6 +115,12 @@ const HELP = [
   ['picks', 'Trades', 'Draft pick value', 'pick value elite high mid low tier projected order',
    `<p>Future picks are valued by where the team is <b>projected</b> to pick, from current strength and record. Tiers: <b>ELITE</b> (top 5), <b>HIGH</b> (6-12), <b>MID</b> (13-22) and <b>LOW</b>. A bad team's first-rounder is worth a lot more than a contender's.</p>`],
 
+  ['offers', 'Trades', 'Trade offers from other teams', 'trade offer offers deadline draft day trade up accept decline counter',
+   `<p>Other teams will sometimes call you with offers: in the weeks before the trade deadline (week ${TRADE_DEADLINE_WEEK}), and when you're on the clock in the draft, usually a team trying to move up. An offer can be picks, players or a mix.</p>
+   <p>Offers pop up when they arrive, and the <b>⇄ OFFERS</b> button in the header keeps them handy. <b>ACCEPT</b>, <b>DECLINE</b>, or <b>COUNTER IN TRADE TAB</b> to load the deal into the trade screen and adjust it. Deadline offers stay open for about two weeks, and draft offers expire once you make the pick. SIM TO PLAYOFFS pauses when an offer comes in.</p>`],
+  ['simscout', 'Season', 'Simming ahead and auto-scouting', 'sim ahead skip scouting auto scout check-in needs projected pick',
+   `<p>If you press <b>SIM TO PLAYOFFS</b>, scouting check-ins don't stop the sim. Your scouts spend the points themselves, focusing on prospects at positions you need who are likely to still be there at your projected picks. When a check-in is open, <b>AUTO-SCOUT &amp; SIM TO PLAYOFFS</b> does the same thing.</p>
+   <p>The Scouting tab's <b>NEEDS AT YOUR PICKS</b> panel shows your projected picks and how each need looks from there: ▲ a good fit is likely to be available, ▼ nothing worth taking is projected.</p>`],
   // ---------- History ----------
   ['hof', 'History & stats', 'Hall of Fame voting', 'hall of fame hof vote ballot induct legends enshrine',
    `<p>After every Megacup you hold the Hall of Fame vote. Press <b>HALL OF FAME VOTE</b> in the header, click any name to review his full career and highlights, and induct up to <b>${HOF_MAX_VOTES}</b> players. Players reach the ballot ${HOF_WAIT} seasons after retiring and stay on it for up to 10 years. The Hall of Fame (History tab) already holds legends from 1967 on.</p>`],

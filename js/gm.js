@@ -33,10 +33,63 @@ function scoutProspect(L, pid) {
   sortBoard(L, currentBoard(L));
   return true;
 }
-// Spend remaining points on the prospects that best fit your needs, broad coverage first.
+// ---------- Your picks and what's realistically there when you pick ----------
+// Upcoming picks for a team in the next draft: actual picks during the draft, projected slots before it.
+function teamDraftPicks(L, tid) {
+  if (L.draft) return L.draft.picks.slice(L.draft.cur).filter(p => p.tid === tid).map(p => ({ ovr: p.ovr, rd: p.rd, pk: p.pk, before: p.ovr - 1 - L.draft.cur }));
+  if (!(L.prospects || []).length) return [];
+  const proj = projectDraftOrder(L), y = L.year + 1, out = [];
+  for (let rd = 1; rd <= 7; rd++) for (let o = 0; o < 32; o++) if (getPickOwner(L, y, rd, o) === tid) { const ovr = (rd - 1) * 32 + proj.slot[o]; out.push({ ovr, rd, pk: proj.slot[o], before: ovr - 1, proj: true }); }
+  return out.sort((a, b) => a.ovr - b.ovr);
+}
+// Chance a prospect at board index i (0-based) is still there after `before` picks. Rival boards differ, so it's soft.
+function availProb(i, before) { return 1 / (1 + Math.exp(-(i - before + 2) / (2.5 + before * 0.12))); }
+// Team needs adjusted for draft position: a need you can fill at your first picks counts for more,
+// a need nobody worth taking will be left for gets dialed down.
+function draftNeeds(L, team, needs, board) {
+  needs = needs || teamNeeds(L, team); board = board || currentBoard(L);
+  const picks = teamDraftPicks(L, team.id).filter(p => p.rd <= 2).slice(0, 2);
+  if (!picks.length || !board.length) return needs;
+  const out = {};
+  for (const pos of POSITIONS) {
+    const nd = needs[pos];
+    let best = null;
+    for (const pk of picks) {
+      for (let i = 0; i < Math.min(board.length, 160); i++) {
+        const p = L.players[board[i]]; if (!p || p.pos !== pos || availProb(i, pk.before) < 0.5) continue;
+        if (!best || p.sPot * 0.55 + p.sOvr * 0.45 > best.p.sPot * 0.55 + best.p.sOvr * 0.45) best = { p, pk };
+        break; // first likely-available one at this pick is the best of that position on the board
+      }
+    }
+    let adj = 0, note = null;
+    if (!best) { adj = -1.5; note = `none projected at #${picks[0].ovr}`; }
+    else if (best.p.sOvr > nd.worstStarter) { adj = 1; note = `${best.p.ln} could start, likely there at #${best.pk.ovr}`; }
+    else if (best.p.sPot >= nd.stAvg + 4) { adj = 0.5; note = `${best.p.ln} (${potGrade(best.p.sPot, best.p.gen)} pot) likely at #${best.pk.ovr}`; }
+    else { adj = -1; note = `little value projected at #${picks[0].ovr}`; }
+    if (nd.need < 2 || ((pos === 'K' || pos === 'P') && nd.need < 5)) adj = Math.min(adj, 0); // don't invent a need just because a prospect is there
+    const need = Math.round(clamp(nd.need + adj, 0, 10) * 10) / 10;
+    out[pos] = { ...nd, need, baseNeed: nd.need, level: need >= 6 ? 'HIGH' : need >= 3.5 ? 'MED' : 'LOW', draftNote: note };
+  }
+  return out;
+}
+// Spend remaining points on prospects that fit your needs AND are likely to be there at your picks.
 function autoScout(L) {
   const ids = currentBoard(L);
-  const targets = recommendProspects(L, L.teams[L.userTeam], 40, ids).map(r => r.p);
+  const team = L.teams[L.userTeam];
+  const needs = draftNeeds(L, team, null, ids);
+  const picks = teamDraftPicks(L, L.userTeam).filter(p => p.rd <= 4);
+  const RD_W = [0, 1, 0.8, 0.6, 0.4];
+  const scored = ids.slice(0, 200).map((id, i) => {
+    const p = L.players[id]; const f = draftFit(p, needs).v;
+    let rel = picks.length ? 0 : 1;
+    for (const pk of picks) {
+      const a = availProb(i, pk.before);
+      const inRange = a * (i <= pk.before + 24 ? 1 : 0.35); // much further down = a target for a later pick
+      rel = Math.max(rel, inRange * RD_W[pk.rd]);
+    }
+    return { p, s: f * (0.25 + rel) };
+  }).sort((a, b) => b.s - a.s);
+  const targets = scored.slice(0, 40).map(x => x.p);
   let spent = 0;
   for (let lvl = 1; lvl <= 3; lvl++) for (const p of targets) {
     while ((p.sc || 0) < lvl && L.scoutPts >= scoutCost(p)) { L.scoutPts -= scoutCost(p); p.sc = (p.sc || 0) + 1; updateScout(p); spent++; }
@@ -74,6 +127,8 @@ function startScouting(L, name, pts, combine) {
   news(L, `${name}: your scouts have reported in. +${pts} scouting points (${L.scoutPts} available).`, L.userTeam);
 }
 function finishScouting(L) { L.scoutStop = null; }
+// Skipping a check-in (sim ahead): the scouts spend the points themselves.
+function autoScoutStop(L) { const n = autoScout(L); finishScouting(L); return n; }
 function runCombine(L) {
   for (const id of L.draft.pool) {
     const p = L.players[id], a = p.attrs;

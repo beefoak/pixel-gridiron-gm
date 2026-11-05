@@ -33,7 +33,7 @@ function vTrade() {
   const myNeeds = teamNeeds(G, TM(G.userTeam));
   const theirNeeds = Object.values(ev.needs).filter(n => n.level !== 'LOW').sort((a, b) => b.need - a.need);
   const ps = ev.proj.seed[pt];
-  let h = '';
+  let h = offersPanel();
   if (why) h += `<div class="warn">${esc(why)} You can still explore offers.</div>`;
   h += `<div class="bar-row"><div class="px small">TRADE PARTNER <select data-change="tradePartner">${G.teams.filter(t => t.id !== G.userTeam).map(t => `<option value="${t.id}" ${t.id === pt ? 'selected' : ''}>${esc(t.city + ' ' + t.name)}</option>`).join('')}</select></div>
     <div>${helm(pt, 28)} ${recStr(P.rec)} · ${ps ? `projected ${ordinal(ps)} seed` : 'projected to miss playoffs'} · their pick projects #${ev.proj.slot[pt]} · ${tierChip(slotTier(ev.proj.slot[pt]))}</div></div>`;
@@ -67,6 +67,17 @@ function nextScoutLabel() {
   if (G.phase === 'preseason') return 'Early Season Scouting after week 4';
   return 'Early Season Scouting next season';
 }
+// Your upcoming picks and how each position's need looks from where you pick.
+function draftNeedsPanel(needs) {
+  const picks = teamDraftPicks(G, G.userTeam);
+  if (!picks.length) return '';
+  const lvl = (l) => `<span class="need n-${l.toLowerCase()}">${l}</span>`;
+  const top = POSITIONS.map(ps => needs[ps]).filter(n => n.level !== 'LOW' || (n.baseNeed !== undefined && n.baseNeed >= 3.5)).sort((a, b) => b.need - a.need);
+  const arrow = (n) => n.baseNeed === undefined || Math.abs(n.need - n.baseNeed) < 0.3 ? '' : n.need > n.baseNeed ? ' <span class="good">▲</span>' : ' <span class="bad">▼</span>';
+  return panel(`NEEDS AT YOUR PICKS <span class="dim small">${picks.slice(0, 4).map(p => `R${p.rd} #${p.ovr}`).join(' · ')}${picks[0].proj ? ' (projected)' : ''}</span>`,
+    `<p class="dim small">Needs are adjusted for where you pick: ▲ a good fit is likely to be there, ▼ nothing worth taking is projected. Auto-scout focuses on prospects in range of your picks.</p>` +
+    (top.length ? `<table class="tbl">${top.map(n => `<tr><td><b>${n.pos}</b></td><td>${lvl(n.level)}${arrow(n)}</td><td class="small dim">${esc(n.draftNote || '')}</td><td class="small dim">${esc(n.reasons.slice(0, 2).join(' · '))}</td></tr>`).join('')}</table>` : '<p class="dim">No pressing needs.</p>'));
+}
 function vScouting() {
   const board = currentBoard(G);
   const stop = G.scoutStop;
@@ -77,8 +88,9 @@ function vScouting() {
   h += draftClassPanel();
   if (!board.length) return h + panel('PROSPECTS', '<p class="dim">The next draft class will be revealed when the season starts.</p>');
   const rep = G.scoutReport;
-  const me = TM(G.userTeam); const needs = teamNeeds(G, me);
+  const me = TM(G.userTeam); const needs = draftNeeds(G, me, null, board);
   const recs = recommendProspects(G, me, 8, board); const recIds = new Set(recs.map(r => r.p.id));
+  h += draftNeedsPanel(needs);
   h += `<div class="grid2">`;
   const plist = (ids, up) => ids.map(id => G.players[id]).filter(Boolean).map(p => `<li>${up ? '<span class="good">▲</span>' : '<span class="bad">▼</span>'} ${p.pos} ${pLink(p)} <span class="dim">${esc(p.college)}</span> ${ovrB(p.sOvr)}</li>`).join('') || '<li class="dim">No big movers.</li>';
   h += panel(`STOCK REPORT${rep ? ' · ' + esc(rep.name.toUpperCase()) : ''}`, rep ? `<div class="grid2"><div><div class="px small good">RISING</div><ul class="dl">${plist(rep.risers, true)}</ul></div><div><div class="px small bad">FALLING</div><ul class="dl">${plist(rep.fallers, false)}</ul></div></div>` : '<p class="dim">No reports yet this season.</p>');
@@ -92,7 +104,7 @@ function vScouting() {
   const lvl = (l) => `<span class="need n-${l.toLowerCase()}">${l}</span>`;
   h += panel(`${year} BIG BOARD (YOUR SCOUTS' VIEW)`, `<div class="scroll tall"><table class="tbl"><tr><th>RK</th><th>NAME</th><th>POS</th><th>FIT</th><th>AGE</th><th>COLLEGE</th><th>SCOUTED</th><th>PROJ</th><th>POT</th><th>40YD</th><th>TREND</th><th></th></tr>${ps.slice(0, 160).map(p => {
     const sc = p.sc || 0; const sp = SCOUT_SPREAD[sc];
-    return `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${board.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}</td><td>${p.pos}</td><td>${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${scoutPips(sc)}</td><td>${ovrB(p.sOvr)}${sp ? ` <span class="dim small">±${Math.ceil(sp)}</span>` : ''}</td><td>${sc === 0 && !p.gen ? '<span class="dim">?</span>' : potB(p.sPot, p.gen)}</td><td>${p.combine ? p.combine.forty : '<span class="dim">-</span>'}</td><td>${p.trend ? (p.trend > 0 ? `<span class="good">+${p.trend}</span>` : `<span class="bad">${p.trend}</span>`) : ''}</td><td>${sc < 3 ? `<button class="btn tiny" data-act="scout" data-id="${p.id}" ${G.scoutPts < scoutCost(p) ? 'disabled' : ''}>SCOUT ${scoutCost(p)}</button>` : '<span class="good small">FULL</span>'}</td></tr>`;
+    return `<tr class="${recIds.has(p.id) ? 'rec-row' : ''}"><td class="dim">${board.indexOf(p.id) + 1}</td><td>${recIds.has(p.id) ? '<span class="gold">★</span> ' : ''}${pLink(p)}</td><td>${p.pos}</td><td title="${esc(needs[p.pos].draftNote || '')}">${lvl(needs[p.pos].level)}</td><td>${p.age}</td><td class="dim">${esc(p.college)}</td><td>${scoutPips(sc)}</td><td>${ovrB(p.sOvr)}${sp ? ` <span class="dim small">±${Math.ceil(sp)}</span>` : ''}</td><td>${sc === 0 && !p.gen ? '<span class="dim">?</span>' : potB(p.sPot, p.gen)}</td><td>${p.combine ? p.combine.forty : '<span class="dim">-</span>'}</td><td>${p.trend ? (p.trend > 0 ? `<span class="good">+${p.trend}</span>` : `<span class="bad">${p.trend}</span>`) : ''}</td><td>${sc < 3 ? `<button class="btn tiny" data-act="scout" data-id="${p.id}" ${G.scoutPts < scoutCost(p) ? 'disabled' : ''}>SCOUT ${scoutCost(p)}</button>` : '<span class="good small">FULL</span>'}</td></tr>`;
   }).join('')}</table></div>`);
   return h;
 }

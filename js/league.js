@@ -254,6 +254,7 @@ function simWeek(L) {
   weeklyHealth(L);
   weeklyTraining(L);
   L.week++;
+  if (typeof maybeDeadlineOffer === 'function') maybeDeadlineOffer(L);
   teamSeasonRecords(L);
   weeklyStories(L);
   const stop = SCOUT_STOPS[L.week];
@@ -438,6 +439,7 @@ function careerTotals(p) { const t = emptyStats(); p.career.forEach(c => addStat
 
 function runOffseason(L) {
   const season = L.year;
+  L.hofAuto = autoHofVotes(L); // you skipped the vote: the selection committee inducts the clear cases
   for (const t of L.teams) {
     t.history.push({ year: season, w: t.rec.w, l: t.rec.l, t: t.rec.t, pf: t.rec.pf, pa: t.rec.pa, seed: L.playoffs ? seedOf(L, t.id) : 0, result: playoffResult(L, t.id), ts: teamSeasonStats(L, t.id).v });
     t.prevWins = t.rec.w;
@@ -619,11 +621,15 @@ function draftFit(p, needs, ai) {
 }
 function recommendProspects(L, team, n, ids) {
   const D = L.draft; ids = ids || (D ? D.pool : null); if (!ids || !ids.length) return [];
-  const needs = teamNeeds(L, team);
+  const needs = draftNeeds(L, team, null, ids);
+  // before the draft, weigh who is likely to still be there at your first pick
+  const first = !D && team.id === L.userTeam ? teamDraftPicks(L, team.id)[0] : null;
   const pool = ids.slice(0, 120).map(id => L.players[id]);
-  const scored = pool.map((p, i) => ({ p, rank: i + 1, ...draftFit(p, needs) })).sort((a, b) => b.v - a.v).slice(0, n || 5);
+  const scored = pool.map((p, i) => { const f = draftFit(p, needs); const av = first ? availProb(i, first.before) : 1; return { p, rank: i + 1, ...f, av, v: f.v - (1 - av) * 10 }; }).sort((a, b) => b.v - a.v).slice(0, n || 5);
   for (const r of scored) {
     const nd = needs[r.p.pos]; const why = [];
+    if (first && r.av >= 0.6) why.push(`likely there at #${first.ovr}`);
+    else if (first && r.av < 0.35) why.push(`probably gone by #${first.ovr}`);
     if (r.rank <= 3) why.push(`#${r.rank} on the board`);
     if (nd.level !== 'LOW') why.push(`${nd.level} need at ${r.p.pos}`);
     if (r.startsNow) why.push(`could start now (${r.p.sOvr} vs your ${nd.worstStarter})`);
@@ -646,7 +652,7 @@ function aiDraftPick(L) {
   draftPlayer(L, best.id);
 }
 function draftDone(L) { return !L.draft || L.draft.cur >= L.draft.picks.length; }
-function simDraftToUser(L) { while (!draftDone(L) && L.draft.picks[L.draft.cur].tid !== L.userTeam) aiDraftPick(L); }
+function simDraftToUser(L) { while (!draftDone(L) && L.draft.picks[L.draft.cur].tid !== L.userTeam) aiDraftPick(L); if (typeof maybeDraftOffer === 'function') maybeDraftOffer(L); }
 function simDraftAll(L) { while (!draftDone(L)) aiDraftPick(L); }
 function finishDraft(L) {
   simDraftAll(L);

@@ -93,12 +93,12 @@ function phaseLabel() {
   return '';
 }
 function phaseButtons() {
-  if (G.scoutStop) return `<span class="px small gold blink2">${esc(G.scoutStop.name.toUpperCase())}</span><button class="btn alt" data-act="tab" data-tab="scouting">SCOUTING (${G.scoutPts} PTS)</button><button class="btn" data-act="scoutDone">DONE SCOUTING &gt;</button>`;
+  if (G.scoutStop) return `<span class="px small gold blink2">${esc(G.scoutStop.name.toUpperCase())}</span><button class="btn alt" data-act="tab" data-tab="scouting">SCOUTING (${G.scoutPts} PTS)</button><button class="btn" data-act="scoutDone">DONE SCOUTING &gt;</button>${G.phase === 'regular' ? `<button class="btn alt" data-act="simSeason" title="Your scouts spend points for you at every check-in">»» AUTO-SCOUT &amp; SIM TO PLAYOFFS</button>` : `<button class="btn alt" data-act="scoutAutoDone">AUTO-SCOUT &amp; CONTINUE &gt;</button>`}`;
   switch (G.phase) {
     case 'regular': return `<button class="btn" data-act="playWeek">&gt; PLAY WEEK ${G.week}</button><button class="btn alt" data-act="simSeason">»» SIM TO PLAYOFFS</button>`;
     case 'awards': return `<button class="btn alt" data-act="tab" data-tab="awards">AWARDS</button><button class="btn" data-act="startPlayoffs">&gt; START PLAYOFFS</button>`;
     case 'playoffs': return `<button class="btn" data-act="playRound">&gt; PLAY ${ROUND_NAMES[G.playoffs.round].toUpperCase()}</button><button class="btn alt" data-act="simPlayoffs">»» SIM PLAYOFFS</button>`;
-    case 'postseason': return G.hofVoted && G.hofVoted[G.year] ? `<button class="btn alt" data-act="hofBallot">HALL OF FAME</button><button class="btn" data-act="offseason">&gt; BEGIN OFFSEASON</button>` : `<button class="btn" data-act="hofBallot">HALL OF FAME VOTE</button><button class="btn alt" data-act="offseason">SKIP VOTE &gt; OFFSEASON</button>`;
+    case 'postseason': return G.hofVoted && G.hofVoted[G.year] ? `<button class="btn alt" data-act="hofBallot">HALL OF FAME</button><button class="btn" data-act="offseason">&gt; BEGIN OFFSEASON</button>` : `<button class="btn" data-act="hofBallot">HALL OF FAME VOTE</button><button class="btn alt" data-act="offseason" title="The selection committee inducts the clear cases for you">SKIP VOTE (AUTO-INDUCT) &gt; OFFSEASON</button>`;
     case 'draft': return `${reviewButtons()}<button class="btn alt" data-act="tab" data-tab="draft">DRAFT BOARD</button><button class="btn" data-act="finishDraft">»» AUTO-FINISH DRAFT</button>`;
     case 'resign': return `<button class="btn alt" data-act="tab" data-tab="contracts">EXPIRING DEALS</button><button class="btn" data-act="startFA">BEGIN FREE AGENCY &gt;</button>`;
     case 'freeagency': return `<button class="btn alt" data-act="tab" data-tab="fa">FREE AGENTS</button>${G.faWave < FA_WAVES ? `<button class="btn alt" data-act="faWave">SIM FA WAVE ${G.faWave + 1}/${FA_WAVES}</button>` : '<span class="dim small">ALL WAVES DONE</span>'}<button class="btn" data-act="finishFA">FINISH FREE AGENCY &gt;</button>`;
@@ -114,7 +114,7 @@ function renderHeader() {
     <div class="actions">${phaseButtons()}</div>
     <div class="menu"><label class="chk"><input type="checkbox" data-change="watch" ${UI.watch ? 'checked' : ''}> Watch my games</label>
     <label class="chk"><input type="checkbox" data-change="autoRoster" ${G.autoRoster ? 'checked' : ''}> Auto-manage injuries</label>
-    <button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="feedback" title="Report a bug or send a suggestion">✉ FEEDBACK</button><button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
+    ${offersButton()}<button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="feedback" title="Report a bug or send a suggestion">✉ FEEDBACK</button><button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
   </header>`;
 }
 function renderNav() {
@@ -363,7 +363,7 @@ function vDraft() {
   let h = `<div class="draft-banner ${myTurn ? 'mine' : ''}">${pick ? `<div class="px">ROUND ${pick.rd} · PICK ${pick.pk} (#${pick.ovr})</div><div>${helm(pick.tid, 40)} <b class="px">${esc(TM(pick.tid).city)} ${esc(TM(pick.tid).name)}</b> ${myTurn ? '<span class="blink px">YOU ARE ON THE CLOCK</span>' : 'on the clock'}</div>` : `<div class="px">DRAFT COMPLETE</div><button class="btn alt" data-act="draftReview" data-v="${D.year}">VIEW DRAFT REVIEW</button>`}
    <div class="actions">${G.scoutStop ? `<span class="dim">The ${esc(G.scoutStop.name)} is underway - finish scouting to open the draft.</span><button class="btn" data-act="tab" data-tab="scouting">GO TO SCOUTING</button>` : ''}${G.scoutStop ? '' : !myTurn && !done ? `<button class="btn" data-act="draftToMe">» SIM TO MY PICK</button><button class="btn alt" data-act="draftOne">NEXT PICK</button>` : ''}${myTurn && !G.scoutStop ? `<button class="btn alt" data-act="draftAuto">AUTO-PICK FOR ME</button>` : ''}${G.scoutStop ? '' : `<button class="btn alt" data-act="finishDraft">»» FINISH DRAFT</button>`}</div></div>`;
   const me = TM(G.userTeam);
-  const needs = teamNeeds(G, me);
+  const needs = draftNeeds(G, me, null, D.pool);
   const recs = done ? [] : recommendProspects(G, me, 5);
   const recIds = new Set(recs.map(r => r.p.id));
   const lvl = (l) => `<span class="need n-${l.toLowerCase()}">${l}</span>`;
@@ -612,6 +612,7 @@ function onClick(e) {
   if (onDevClick(act, el)) return;
   if (onLoreClick(act, el)) return;
   if (onFeedbackClick(act, el)) return;
+  if (onOfferClick(act, el)) return;
   switch (act) {
     case 'helpOpen': openHelpModal(); break;
     case 'helpCat': UI.helpCat = v; if ($('#modal .help')) openHelpModal(); else render(); break;
@@ -625,12 +626,21 @@ function onClick(e) {
     case 'tab': UI.tab = el.dataset.tab; closeModal(); render(); window.scrollTo(0, 0); break;
     case 'playWeek': doPlayWeek(); break;
     case 'simSeason': {
-      while (G.phase === 'regular' && !G.scoutStop) simWeek(G);
+      // Simming ahead skips scouting check-ins: scouts auto-spend on needs near your projected picks.
+      let reports = 0, stops = 0; G.newOffers = 0;
+      while (G.phase === 'regular') {
+        if (G.scoutStop) { reports += autoScoutStop(G); stops++; }
+        simWeek(G);
+        if (G.newOffers) break; // a trade offer came in before the deadline: stop so you can look at it
+      }
+      if (G.scoutStop && G.phase === 'awards') { reports += autoScoutStop(G); stops++; }
       persist();
-      if (G.scoutStop) { UI.tab = 'scouting'; render(); toast(`${G.scoutStop.name}: check in with your scouts before continuing.`); }
-      else { UI.tab = 'awards'; render(); toast('Regular season complete! Awards announced.'); }
+      const sc = stops ? ` Scouts handled ${stops} check-in${stops > 1 ? 's' : ''} (${reports} report${reports === 1 ? '' : 's'}).` : '';
+      if (G.newOffers) { G.newOffers = 0; render(); toast(`Week ${G.week - 1}: a trade offer came in.${sc}`); openOffersModal(); }
+      else { UI.tab = 'awards'; render(); toast('Regular season complete! Awards announced.' + sc); }
       break;
     }
+    case 'scoutAutoDone': { const n = autoScoutStop(G); persist(); render(); toast(`Scouts filed ${n} report${n === 1 ? '' : 's'}. ${G.phase === 'draft' ? 'The draft is open!' : 'Back to the season.'}`); break; }
     case 'startPlayoffs': startPlayoffs(G); persist(); UI.tab = 'playoffs'; render(); break;
     case 'playRound': {
       const r = G.playoffs.round; simPlayoffRound(G); persist(); UI.tab = 'playoffs'; render();
@@ -639,9 +649,9 @@ function onClick(e) {
       break;
     }
     case 'simPlayoffs': while (G.phase === 'playoffs') simPlayoffRound(G); persist(); UI.tab = 'playoffs'; render(); break;
-    case 'offseason': runOffseason(G); persist(); UI.tab = 'draft'; render(); toast('Players aged and developed. Draft time!'); break;
+    case 'offseason': { runOffseason(G); persist(); UI.tab = 'draft'; render(); const hf = G.hofAuto; G.hofAuto = null; toast(hf ? (hf.length ? `Hall of Fame committee inducted ${hf.map(c => c.name).join(', ')}. ` : 'The Hall of Fame committee inducted no one this year. ') + 'Draft time!' : 'Players aged and developed. Draft time!'); break; }
     case 'draftToMe': simDraftToUser(G); persist(); render(); break;
-    case 'draftOne': if (!draftDone(G)) aiDraftPick(G); render(); break;
+    case 'draftOne': if (!draftDone(G)) aiDraftPick(G); maybeDraftOffer(G); persist(); render(); break;
     case 'draftPick': draftPlayer(G, +id); simDraftToUser(G); persist(); render(); break;
     case 'draftAuto': { const r = recommendProspects(G, TM(G.userTeam), 1)[0]; if (r) draftPlayer(G, r.p.id); else aiDraftPick(G); } simDraftToUser(G); persist(); render(); break;
     case 'finishDraft': { const yr = G.draft.year; finishDraft(G); persist(); UI.tab = 'roster'; render(); draftReviewModal(yr); break; }
@@ -698,6 +708,7 @@ function onClick(e) {
     case 'rpSpeed': RP.speed = +v; document.querySelectorAll('[data-act="rpSpeed"]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); break;
     case 'rpEnd': { stopReplay(); const g = RP.g; const logEl = $('#rpLog'); logEl.innerHTML = ''; RP.i = g.log.length; const last = g.log[g.log.length - 1]; rpScore(last); Field.frame($('#rpField').getContext('2d'), TM(g.home), TM(g.away), null, 0); g.log.slice().reverse().slice(0, 60).forEach(x => { const li = document.createElement('li'); li.className = x.type; li.innerHTML = `<span class="dim">${x.q > 4 ? 'OT' : 'Q' + x.q} ${fmtClock(x.clk)}</span> ${esc(x.text)}`; logEl.appendChild(li); }); $('#rpText').textContent = `FINAL: ${TM(g.away).abbr} ${g.as} - ${TM(g.home).abbr} ${g.hs}`; $('#rpBtn').textContent = '> REPLAY'; break; }
   }
+  showNewOffers();
 }
 function onChange(e) {
   const el = e.target; const k = el.dataset.change; if (!k) return;
