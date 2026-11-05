@@ -1,9 +1,10 @@
 // Feedback / suggestions / bug reports, emailed to the developer.
-// Static site, so reports go through FormSubmit (formsubmit.co), which forwards the form to the inbox below.
-// The first report ever sent triggers a one-time activation email to that inbox; after confirming it,
-// FormSubmit offers a random alias you can swap in for FEEDBACK_TO to keep the address out of the page source.
-const FEEDBACK_TO = 'jacob.floss@gmail.com';
-const FEEDBACK_URL = 'https://formsubmit.co/ajax/' + FEEDBACK_TO;
+// Static site, so reports go through Web3Forms (web3forms.com). The access key below is public by design:
+// it can only deliver to the developer's inbox, and keeps the address itself out of the page source.
+const FEEDBACK_KEY = '1bf6fe71-29c0-4133-83ba-a735b90a7b15';
+const FEEDBACK_URL = 'https://api.web3forms.com/submit';
+// fallback address for the "email it instead" link, lightly encoded so simple scrapers don't pick it up
+const feedbackAddr = () => [109, 111, 99, 46, 108, 105, 97, 109, 103, 64, 115, 115, 111, 108, 102, 46, 98, 111, 99, 97, 106].reverse().map(c => String.fromCharCode(c)).join('');
 const FEEDBACK_KINDS = [['bug', 'BUG REPORT'], ['idea', 'SUGGESTION'], ['feedback', 'FEEDBACK']];
 const FEEDBACK_COOLDOWN = 60 * 1000;
 
@@ -45,7 +46,7 @@ function readFeedbackForm() {
 }
 function feedbackMailto(kindLabel, d) {
   const body = `${d.body}\n\n${d.ctx ? '---\n' + feedbackContext() : ''}`;
-  return `mailto:${FEEDBACK_TO}?subject=${encodeURIComponent(`[Pixel Gridiron GM] ${kindLabel}: ${d.title}`)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${feedbackAddr()}?subject=${encodeURIComponent(`[Pixel Gridiron GM] ${kindLabel}: ${d.title}`)}&body=${encodeURIComponent(body)}`;
 }
 async function sendFeedback() {
   const d = readFeedbackForm(), st = $('#fbStatus');
@@ -57,15 +58,15 @@ async function sendFeedback() {
   const btn = $('[data-act=fbSend]'); btn.disabled = true; btn.textContent = 'SENDING...';
   st.className = 'small dim'; st.textContent = '';
   const payload = {
-    _subject: `[Pixel Gridiron GM] ${kindLabel}: ${d.title}`, _template: 'box', _captcha: 'false',
+    access_key: FEEDBACK_KEY, subject: `[Pixel Gridiron GM] ${kindLabel}: ${d.title}`, from_name: 'Pixel Gridiron GM player',
     type: kindLabel, summary: d.title, message: d.body, reply_to: d.email || '(none)',
   };
-  if (d.email) payload._replyto = d.email;
+  if (d.email) payload.email = d.email; // Web3Forms uses this as the reply-to address
   if (d.ctx) payload.game_info = feedbackContext();
   try {
     const r = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok || j.success === false || j.success === 'false') throw new Error(j.message || 'HTTP ' + r.status);
+    if (!r.ok || !j.success) throw new Error(j.message || 'HTTP ' + r.status);
     try { localStorage.setItem('pgg_fb_last', String(Date.now())); } catch (e) { }
     UI.fbDraft = null;
     closeModal(); toast('Thanks! Your report was sent.');
