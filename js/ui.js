@@ -58,10 +58,13 @@ function setStartName(i, field, raw) {
   }
   try { localStorage.setItem(NAMES_KEY, JSON.stringify(names)); } catch (e) { /* ignore */ }
 }
+// Link between the live game and the beta (each site has its own save slot).
+const SWITCH_SITE = { url: 'https://beefoak.github.io/pixel-gridiron-gm-beta/', label: 'TRY THE BETA ▶', title: 'Play the beta with new features (Operations, player morale). It keeps its own save and imports this one the first time.' };
+function switchSiteBtn(tiny) { return `<button class="btn ${tiny ? 'tiny ' : ''}alt" data-act="switchSite" title="${SWITCH_SITE.title}">${SWITCH_SITE.label}</button>`; }
 function renderStart() {
   const saved = hasSave();
   let h = `<div class="start"><div class="logo px">PIXEL<br><span>GRIDIRON</span> GM</div>
-  <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p><div class="center"><button class="btn alt" data-act="helpOpen">? HOW TO PLAY</button> <button class="btn alt" data-act="feedback">✉ FEEDBACK</button></div>`;
+  <p class="tag">Run a pro football franchise. Draft, develop, survive injuries, chase the title.</p><div class="center"><button class="btn alt" data-act="helpOpen">? HOW TO PLAY</button> <button class="btn alt" data-act="feedback">✉ FEEDBACK</button> ${switchSiteBtn()}</div>`;
   if (saved) h += `<div class="center"><button class="btn big" data-act="continue">&gt; CONTINUE SAVED GAME</button></div>`;
   h += `<h2 class="px">${UI.editNames ? 'NAME YOUR LEAGUE' : saved ? 'OR START A NEW FRANCHISE' : 'CHOOSE YOUR TEAM'}</h2>
   <div class="center">${UI.editNames ? `<p class="dim">Rename any team and its abbreviation (2-4 letters). Cities and colors stay the same. Names are remembered in this browser.</p><button class="btn" data-act="namesDone">DONE - PICK A TEAM</button><button class="btn alt" data-act="namesReset">RESET TO DEFAULTS</button>` : `<button class="btn alt" data-act="namesEdit">CUSTOMIZE TEAM NAMES</button>`}</div><div class="pick-grid">`;
@@ -114,7 +117,7 @@ function renderHeader() {
     <div class="actions">${phaseButtons()}</div>
     <div class="menu"><label class="chk"><input type="checkbox" data-change="watch" ${UI.watch ? 'checked' : ''}> Watch my games</label>
     <label class="chk"><input type="checkbox" data-change="autoRoster" ${G.autoRoster ? 'checked' : ''}> Auto-manage injuries</label>
-    ${offersButton()}<button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="feedback" title="Report a bug or send a suggestion">✉ FEEDBACK</button><button class="btn tiny alt" data-act="save">SAVE</button><button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
+    ${offersButton()}<button class="btn tiny alt" data-act="tab" data-tab="help">? HELP</button><button class="btn tiny alt" data-act="feedback" title="Report a bug or send a suggestion">✉ FEEDBACK</button><button class="btn tiny alt" data-act="save">SAVE</button>${switchSiteBtn(true)}<button class="btn tiny danger" data-act="quit">NEW GAME</button></div>
   </header>`;
 }
 function renderNav() {
@@ -623,6 +626,7 @@ function onClick(e) {
     case 'continue': G = loadLeague(); if (!G) { toast('Save could not be loaded.'); render(); } else render(); break;
     case 'quit': if (confirm('Start a new game? Your current save will be overwritten when you pick a team.')) { G = null; closeModal(); render(); } break;
     case 'save': persist(); toast('Game saved.'); break;
+    case 'switchSite': if (G) persist(); location.href = SWITCH_SITE.url; break;
     case 'tab': UI.tab = el.dataset.tab; closeModal(); render(); window.scrollTo(0, 0); break;
     case 'playWeek': doPlayWeek(); break;
     case 'simSeason': {
